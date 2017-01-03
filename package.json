@@ -1,0 +1,22 @@
+{
+  "name": "sharemap-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server/server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hr50-thesis-group/sharemap-backend.git"
+  },
+  "author": "Graham Perich",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hr50-thesis-group/sharemap-backend/issues"
+  },
+  "homepage": "https://github.com/hr50-thesis-group/sharemap-backend#readme",
+  "dependencies": {
+    "express": "^4.14.0"
+  }
+}
