@@ -17,6 +17,8 @@
   },
   "homepage": "https://github.com/hr50-thesis-group/sharemap-backend#readme",
   "dependencies": {
-    "express": "^4.14.0"
+    "body-parser": "^1.15.2",
+    "express": "^4.14.0",
+    "neo4j-driver": "^1.0.5"
   }
 }
