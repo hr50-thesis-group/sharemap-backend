@@ -1,6 +1,7 @@
 var express = require('express');
 var path = require('path');
 var neo4j = require('neo4j-driver').v1;
+var uuidV1 = require('uuid/v1');
 var bodyParser = require('body-parser');
 var jsonParser = bodyParser.json();
 
@@ -22,10 +23,11 @@ app.get('/', function(req, res) {
 
 app.get('/api/users', function(req, res) {
   // query DB for all users, send all user models
-  session.run('MATCH(n:User) RETURN n').then(function(result) {
-    res.send(result.records.map(function(record) {
-      return record;
+  session.run('MATCH(n:User) RETURN n').then(result => {
+    res.send(result.records.map(record => {
+      return record._fields[0].properties;
     }));
+    session.close();
   })
   .catch(function(err) {
     console.log(err);
@@ -38,20 +40,36 @@ app.post('/api/users', function(req, res) {
   let email = req.body.email || 'no email';
   let photoUrl = req.body.photoUrl || 'no photo';
 
-  session.run('CREATE (n:User {firstName : {firstNameParam},lastName:{lastNameParam},email:{emailParam}, photo:{photoParam}}) RETURN n.firstName', {firstNameParam: firstName, lastNameParam: lastName, emailParam:email, photoParam:photoUrl})
+  session.run('CREATE (n:User {firstName : {firstNameParam},lastName:{lastNameParam},email:{emailParam}, photo:{photoParam}, id:{idParam}}) RETURN n.firstName', {firstNameParam: firstName, lastNameParam: lastName, emailParam:email, photoParam:photoUrl, idParam:uuidV1()})
     .then(function(result) {
-      console.log('successfully posted: ', result);
-      // !!! PASS RESULT TO USER MODEL HERE !!! //
+      console.log('successfully posted: ', result.properties);
+      // !!! PASS RESULT TO USER MODEL HERE !!! 
       res.status(201).send(result);
       session.close();
     }).catch(function(err) {
+      session.close();
       console.log(err);
     })
 });
 
 app.get('/api/users/:userID', function(req, res) {
   var userID = req.params.userID;
-  res.status(200).send(userID);
+  session.run (
+      'MATCH (u:User) \
+      WHERE u.id = {userID} \
+      RETURN u',
+      {userID: userID}
+    )
+    .then(result => {
+      res.status(200).send(result.records.map(record => {
+        return record._fields[0].properties;
+      }));
+      session.close();
+    })
+    .catch(error => {
+      session.close();
+      console.log(error);
+    });
 });
 
 exports.app = app;
