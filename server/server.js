@@ -21,7 +21,10 @@ app.get('/', function(req, res) {
   res.send('hi');
 })
 
+
 // Users API
+// Responds with JSON of all users
+
 app.get('/api/users', function(req, res) {
   // query DB for all users, send all user models
   session.run('MATCH(n:User) RETURN n').then(result => {
@@ -35,32 +38,63 @@ app.get('/api/users', function(req, res) {
   });
 });
 
+// Responds with JSON of user model
+app.get('/api/users/:userID', function(req, res) {
+  var userID = req.params.userID;
+  res.status(200).send(userID);
+});
+
+// Creates a new User
 app.post('/api/users', function(req, res) {
   let firstName = req.body.firstName;
   let lastName = req.body.lastName;
-  let email = req.body.email || 'no email';
-  let photoUrl = req.body.photoUrl || 'no photo';
+  let email = req.body.email || 'No email';
+  let photoUrl = req.body.photoUrl || 'No photo';
 
-  session.run('CREATE (n:User {firstName : {firstNameParam},lastName:{lastNameParam},email:{emailParam}, photo:{photoParam}, id:{idParam}}) RETURN n.firstName', {firstNameParam: firstName, lastNameParam: lastName, emailParam:email, photoParam:photoUrl, idParam:uuidV1()})
+
+  session
+    .run('CREATE (n:User {          \
+      firstName : {firstNameParam}, \
+      lastName:{lastNameParam},     \
+      email:{emailParam},           \
+      photo:{photoParam},           \
+      id:{idParam}                  \
+    }) RETURN n.firstName', {
+      firstNameParam: firstName, 
+      lastNameParam: lastName, 
+      emailParam:email, 
+      photoParam:photoUrl, 
+      idParam:uuidV1()
+    })
     .then(function(result) {
       console.log('successfully posted: ', result.properties);
       // !!! PASS RESULT TO USER MODEL HERE !!! 
       res.status(201).send(result);
       session.close();
-    }).catch(function(err) {
+    })
+    .catch(function(err) {
       session.close();
       console.log(err);
     })
 });
 
-app.get('/api/users/:userID', function(req, res) {
+// Updates a user's information
+app.update('/api/users/:userID', function(req, res) {
+  let firstName = req.body.firstName;
+  let lastName = req.body.lastName;
+  let email = req.body.email;
+  let photoUrl = req.body.photoUrl;
+})
+
+// Deletes a specified user
+app.delete('/api/users/:userID',function(req, res) {
   var userID = req.params.userID;
   session.run (
       'MATCH (u:User) \
       WHERE u.id = {userID} \
       RETURN u',
       {userID: userID}
-    )
+    ) //('MATCH (n {id: {userID}}) DETACH DELETE n')
     .then(result => {
       res.status(200).send(result.records.map(record => {
         return record._fields[0].properties;
@@ -80,12 +114,40 @@ app.get('/api/users/:userID/pins', function(req, res) {
 });
 
 app.post('/api/users/:userID/pins', function(req, res) {
+  let location = req.body.location;
+  let mediaUrl = req.body.mediaUrl;
+  let description = req.body.description || 'No description';
+  let createdAt = req.body.createdAt;
 
+  session
+    .run('CREATE (a:Pin {                \
+        location: {locationParam},       \
+        mediaUrl: {mediaUrlParam},       \
+        description: {descriptionParam}, \
+        createdAt: {createdAtParam}      \
+      }) RETURN a' , {
+        locationParam: location,
+        mediaUrlParam: mediaUrl,
+        descriptionParam: description,
+        createdAtParam: createdAt
+      }
+    )
+    .then(function(result) {
+      console.log('Successfully posted pin: ', result);
+      // !! PASS RESULT TO PIN MDOELHERE !!
+      res.status(201).send(result);
+      session.close();
+    })
+    .catch(function(err) {
+      console.log(err);
+    })
 });
 
 app.get('/api/users/:userID/:pinID', function(req, res) {
 
 });
+
+
 
 exports.app = app;
 
