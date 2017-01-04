@@ -13,13 +13,15 @@ app.listen(1337, function() {
   console.log('Listening on port 1337');
 });
 
+app.use(jsonParser);
+app.use(bodyParser.urlencoded({ extended: false }));
+
 app.get('/', function(req, res) {
   res.send('hi');
 })
 
 app.get('/api/users', function(req, res) {
   // query DB for all users, send all user models
-
   session.run('MATCH(n:User) RETURN n').then(function(result) {
     res.send(result.records.map(function(record) {
       return record;
@@ -28,7 +30,23 @@ app.get('/api/users', function(req, res) {
   .catch(function(err) {
     console.log(err);
   });
+});
 
+app.post('/api/users', function(req, res) {
+  let firstName = req.body.firstName;
+  let lastName = req.body.lastName;
+  let email = req.body.email || 'no email';
+  let photoUrl = req.body.photoUrl || 'no photo';
+
+  session.run('CREATE (n:User {firstName : {firstNameParam},lastName:{lastNameParam},email:{emailParam}, photo:{photoParam}}) RETURN n.firstName', {firstNameParam: firstName, lastNameParam: lastName, emailParam:email, photoParam:photoUrl})
+    .then(function(result) {
+      console.log('successfully posted: ', result);
+      // !!! PASS RESULT TO USER MODEL HERE !!! //
+      res.status(201).send(result);
+      session.close();
+    }).catch(function(err) {
+      console.log(err);
+    })
 });
 
 app.get('/api/users/:userID', function(req, res) {
@@ -37,3 +55,7 @@ app.get('/api/users/:userID', function(req, res) {
 });
 
 exports.app = app;
+
+
+
+
