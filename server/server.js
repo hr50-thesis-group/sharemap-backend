@@ -21,7 +21,6 @@ app.get('/', function(req, res) {
   res.send('hi');
 })
 
-
 // Users API
 // Responds with JSON of all users
 
@@ -77,14 +76,6 @@ app.post('/api/users', function(req, res) {
       console.log(err);
     })
 });
-
-// Updates a user's information
-app.update('/api/users/:userID', function(req, res) {
-  let firstName = req.body.firstName;
-  let lastName = req.body.lastName;
-  let email = req.body.email;
-  let photoUrl = req.body.photoUrl;
-})
 
 // Deletes a specified user
 app.delete('/api/users/:userID',function(req, res) {
