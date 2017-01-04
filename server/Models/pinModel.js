@@ -15,6 +15,10 @@ function Pin(_node) {
     this.mediaUrl = this.mediaUrl.toString();
   }
 
+  if(this.likes) {
+    this.likes = this.likes.toNumber();
+  }
+
   if(this.description) {
     this.description = this.description.toString();
   }
