@@ -21,6 +21,7 @@ app.get('/', function(req, res) {
   res.send('hi');
 })
 
+// Users API
 app.get('/api/users', function(req, res) {
   // query DB for all users, send all user models
   session.run('MATCH(n:User) RETURN n').then(result => {
@@ -70,6 +71,20 @@ app.get('/api/users/:userID', function(req, res) {
       session.close();
       console.log(error);
     });
+});
+
+// Pins API
+
+app.get('/api/users/:userID/pins', function(req, res) {
+
+});
+
+app.post('/api/users/:userID/pins', function(req, res) {
+
+});
+
+app.get('/api/users/:userID/:pinID', function(req, res) {
+
 });
 
 exports.app = app;
