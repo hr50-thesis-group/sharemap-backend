@@ -50,7 +50,7 @@ app.post('/api/users', function(req, res) {
   let lastName = req.body.lastName;
   let email = req.body.email || 'No email';
   let photoUrl = req.body.photoUrl || 'No photo';
-
+  let uniqueID = req.body.fbID !== null ? req.body.fbID : uuidV1();
 
   session
     .run('CREATE (n:User {          \
@@ -64,10 +64,10 @@ app.post('/api/users', function(req, res) {
       lastNameParam: lastName, 
       emailParam:email, 
       photoParam:photoUrl, 
-      idParam:uuidV1()
+      idParam:uniqueID
     })
     .then(function(result) {
-      console.log('successfully posted: ', result.properties);
+      console.log('successfully posted: ', result);
       // !!! PASS RESULT TO USER MODEL HERE !!! 
       res.status(201).send(result);
       session.close();
