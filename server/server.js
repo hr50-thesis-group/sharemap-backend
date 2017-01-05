@@ -3,7 +3,7 @@ var path = require('path');
 var neo4j = require('neo4j-driver').v1;
 var uuidV1 = require('uuid/v1');
 var helpers = require('./helpers.js');
-var request = require("request");
+var request = require('request');
 var bodyParser = require('body-parser');
 var jsonParser = bodyParser.json();
 
@@ -21,7 +21,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 
 app.get('/', function(req, res) {
   res.send('hi');
-})
+});
 
 
 /* * * * * * * *
@@ -41,7 +41,7 @@ app.get('/api/users', function(req, res) {
     session.close();
   })
   .catch(err => {
-    console.log("*** ERROR ***");
+    console.log('*** ERROR ***');
     console.log(err);
   });
 });
@@ -76,19 +76,17 @@ app.post('/api/users', function(req, res) {
   if (req.body.fbID ) {
     uniqueID = req.body.fbID;
   } else {
-    let split = email.split('@');
-    uniqueID = split[0];
+    uniqueID = uuidV1();
   }
-
   request({
     uri: `http://localhost:1337/api/users/${uniqueID}`,
-    method: "GET",
+    method: 'GET',
   }, (err, response, body) => {
     if (err) {
-      console.log("*** ERROR ***");
+      console.log('*** ERROR ***');
       console.log(err);
     } else {
-      if (!JSON.parse(body)[0] || JSON.parse(body)[0].id !== uniqueID) {
+      if (!body[0].id) {
         session
           .run('CREATE (n:User {\
             firstName : {firstNameParam},\
@@ -99,9 +97,9 @@ app.post('/api/users', function(req, res) {
           }) RETURN n.firstName', {
             firstNameParam: firstName, 
             lastNameParam: lastName, 
-            emailParam:email, 
-            photoParam:photoUrl, 
-            idParam:uniqueID
+            emailParam: email, 
+            photoParam: photoUrl, 
+            idParam: uniqueID
           })
           .then(result => {
             console.log('successfully posted: ', result);
@@ -111,18 +109,18 @@ app.post('/api/users', function(req, res) {
           })
           .catch(err => {
             session.close();
-            console.log("*** ERROR ***");
+            console.log('*** ERROR ***');
             console.log(err);
           });
       } else {
-        res.status(400).send('User already exists');
+        response.status(400).send('User already exists');
       }
     }
   });
 });
 
 // Deletes a specified user
-app.delete('/api/users/:userID',function(req, res) {
+app.delete('/api/users/:userID', function(req, res) {
 
 });
 
@@ -142,22 +140,10 @@ app.get('/api/users/:userID/pins', function(req, res) {
       session.close;
     })
     .catch(err => {
-      console.log(err)
-    })
+
+      console.log(err);
+    });
 });
-
-
-// session.run (
-//       'MATCH (u:User)\
-//       WHERE u.id = {userID}\
-//       RETURN u',
-//       {userID: userID}
-//     ) //('MATCH (n {id: {userID}}) DETACH DELETE n')
-//     .then(result => {
-//       res.status(200).send(result.records.map(record => {
-//         return record._fields[0].properties;
-//       }));
-
 
 // Responds with a single pin
 app.get('/api/users/:userID/pins/:pinID', function(req, res) {
@@ -166,8 +152,7 @@ app.get('/api/users/:userID/pins/:pinID', function(req, res) {
   session
     .run('MATCH (a:Pin)\
           WHERE a.id = {pinIDParam}\
-          RETURN a',
-          {
+          RETURN a', {
             pinIDParam: pinID
           })
     .then(result => {
@@ -177,8 +162,8 @@ app.get('/api/users/:userID/pins/:pinID', function(req, res) {
       session.close();
     })
     .catch(err => {
-      console.log(err)
-    })
+      console.log(err);
+    });
 }); 
 
 app.post('/api/users/:userID/pins', function(req, res) {
@@ -188,10 +173,6 @@ app.post('/api/users/:userID/pins', function(req, res) {
   let description = req.body.description || 'No description';
   let createdAt = JSON.stringify(new Date());
   let userID = req.params.userID;
-
-  var postHelper = function(user, pin) {
-    session.run
-  }
 
   session
     .run('CREATE (a:Pin {\
@@ -219,9 +200,9 @@ app.post('/api/users/:userID/pins', function(req, res) {
     })
     .catch(err => {
       session.close();
-      console.log("*** ERROR ***");
+      console.log('*** ERROR ***');
       console.log(err);
-    })
+    });
 });
 
 app.delete('/api/users/:userID/pins/:pinID', function(req, res) {
@@ -237,14 +218,13 @@ app.delete('/api/users/:userID/pins/:pinID', function(req, res) {
     })
     .catch(err => {
       console.log(err);
-    })
-})
+    });
+});
 
 // Updates a pin description
 app.put('/api/users/:userID/pins/:pinID', function(req, res) {
   let pinID = req.body.param.id;
   let newDesc = req.body.param.description;
-
   session
     .run('MATCH (a {id: {pinID} })\
       SET a.description = {newDesc}\
@@ -256,8 +236,8 @@ app.put('/api/users/:userID/pins/:pinID', function(req, res) {
     })
     .catch(err => {
       console.log(err);
-    })
-})
+    });
+});
 
 
 exports.app = app;
