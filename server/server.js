@@ -140,6 +140,7 @@ app.get('/api/users/:userID/pins', function(req, res) {
       session.close;
     })
     .catch(err => {
+
       console.log(err);
     });
 });
@@ -224,7 +225,6 @@ app.delete('/api/users/:userID/pins/:pinID', function(req, res) {
 app.put('/api/users/:userID/pins/:pinID', function(req, res) {
   let pinID = req.body.param.id;
   let newDesc = req.body.param.description;
-
   session
     .run('MATCH (a {id: {pinID} })\
       SET a.description = {newDesc}\
