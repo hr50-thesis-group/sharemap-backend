@@ -3,6 +3,7 @@ var path = require('path');
 var neo4j = require('neo4j-driver').v1;
 var uuidV1 = require('uuid/v1');
 var helpers = require('./helpers.js');
+var request = require("request");
 var bodyParser = require('body-parser');
 var jsonParser = bodyParser.json();
 
@@ -66,38 +67,51 @@ app.post('/api/users', function(req, res) {
   let lastName = req.body.lastName;
   let email = req.body.email || 'No email';
   let photoUrl = req.body.photoUrl || 'No photo';
-  let uniqueID = req.body.fbID !== null ? req.body.fbID : uuidV1();
-
-  // check if user is already in DB
-  if (helpers.userDoesExist(uniqueID)) {
-    res.status(400).send('User already exists');
+  var uniqueID;
+  if (req.body.fbID ) {
+    uniqueID = req.body.fbID;
   } else {
-    session
-      .run('CREATE (n:User {          \
-        firstName : {firstNameParam}, \
-        lastName:{lastNameParam},     \
-        email:{emailParam},           \
-        photo:{photoParam},           \
-        id:{idParam}                  \
-      }) RETURN n.firstName', {
-        firstNameParam: firstName, 
-        lastNameParam: lastName, 
-        emailParam:email, 
-        photoParam:photoUrl, 
-        idParam:uniqueID
-      })
-      .then(result => {
-        console.log('successfully posted: ', result);
-        // PARSE THIS RESULT PROPERLY BEFORE SENDING
-        res.status(201).send(result);
-        session.close();
-      })
-      .catch(err => {
-        session.close();
-        console.log("*** ERROR ***");
-        console.log(err);
-      })
+    uniqueID = uuidV1();
   }
+  request({
+    uri: `http://localhost:1337/api/users/${uniqueID}`,
+    method: "GET",
+  }, (err, response, body) => {
+    if (err) {
+      console.log("*** ERROR ***");
+      console.log(err);
+    } else {
+      if (!body[0].id) {
+        session
+          .run('CREATE (n:User {          \
+            firstName : {firstNameParam}, \
+            lastName:{lastNameParam},     \
+            email:{emailParam},           \
+            photo:{photoParam},           \
+            id:{idParam}                  \
+          }) RETURN n.firstName', {
+            firstNameParam: firstName, 
+            lastNameParam: lastName, 
+            emailParam:email, 
+            photoParam:photoUrl, 
+            idParam:uniqueID
+          })
+          .then(result => {
+            console.log('successfully posted: ', result);
+            // PARSE THIS RESULT PROPERLY BEFORE SENDING
+            res.status(201).send(result);
+            session.close();
+          })
+          .catch(err => {
+            session.close();
+            console.log("*** ERROR ***");
+            console.log(err);
+          });
+      } else {
+        response.status(400).send('User already exists');
+      }
+    }
+  });
 });
 
 // Deletes a specified user
