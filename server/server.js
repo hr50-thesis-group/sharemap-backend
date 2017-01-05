@@ -2,6 +2,7 @@ var express = require('express');
 var path = require('path');
 var neo4j = require('neo4j-driver').v1;
 var uuidV1 = require('uuid/v1');
+var helpers = require('./helpers.js');
 var bodyParser = require('body-parser');
 var jsonParser = bodyParser.json();
 
@@ -32,53 +33,14 @@ app.get('/api/users', function(req, res) {
     }));
     session.close();
   })
-  .catch(function(err) {
+  .catch(err => {
+    console.log("*** ERROR ***");
     console.log(err);
   });
 });
 
 // Responds with JSON of user model
 app.get('/api/users/:userID', function(req, res) {
-  var userID = req.params.userID;
-  res.status(200).send(userID);
-});
-
-// Creates a new User
-app.post('/api/users', function(req, res) {
-  let firstName = req.body.firstName;
-  let lastName = req.body.lastName;
-  let email = req.body.email || 'No email';
-  let photoUrl = req.body.photoUrl || 'No photo';
-  let uniqueID = req.body.fbID !== null ? req.body.fbID : uuidV1();
-
-  session
-    .run('CREATE (n:User {          \
-      firstName : {firstNameParam}, \
-      lastName:{lastNameParam},     \
-      email:{emailParam},           \
-      photo:{photoParam},           \
-      id:{idParam}                  \
-    }) RETURN n.firstName', {
-      firstNameParam: firstName, 
-      lastNameParam: lastName, 
-      emailParam:email, 
-      photoParam:photoUrl, 
-      idParam:uniqueID
-    })
-    .then(function(result) {
-      console.log('successfully posted: ', result);
-      // !!! PASS RESULT TO USER MODEL HERE !!! 
-      res.status(201).send(result);
-      session.close();
-    })
-    .catch(function(err) {
-      session.close();
-      console.log(err);
-    })
-});
-
-// Deletes a specified user
-app.delete('/api/users/:userID',function(req, res) {
   var userID = req.params.userID;
   session.run (
       'MATCH (u:User) \
@@ -96,6 +58,50 @@ app.delete('/api/users/:userID',function(req, res) {
       session.close();
       console.log(error);
     });
+});
+
+// Creates a new User
+app.post('/api/users', function(req, res) {
+  let firstName = req.body.firstName;
+  let lastName = req.body.lastName;
+  let email = req.body.email || 'No email';
+  let photoUrl = req.body.photoUrl || 'No photo';
+  let uniqueID = req.body.fbID !== null ? req.body.fbID : uuidV1();
+  // check if user is already in DB
+  if (helpers.userDoesExist(uniqueID)) {
+    res.status(400).send('User already exists');
+  } else {
+    session
+      .run('CREATE (n:User {          \
+        firstName : {firstNameParam}, \
+        lastName:{lastNameParam},     \
+        email:{emailParam},           \
+        photo:{photoParam},           \
+        id:{idParam}                  \
+      }) RETURN n.firstName', {
+        firstNameParam: firstName, 
+        lastNameParam: lastName, 
+        emailParam:email, 
+        photoParam:photoUrl, 
+        idParam:uniqueID
+      })
+      .then(result => {
+        console.log('successfully posted: ', result);
+        // PARSE THIS RESULT PROPERLY BEFORE SENDING
+        res.status(201).send(result);
+        session.close();
+      })
+      .catch(err => {
+        session.close();
+        console.log("*** ERROR ***");
+        console.log(err);
+      })
+  }
+});
+
+// Deletes a specified user
+app.delete('/api/users/:userID',function(req, res) {
+
 });
 
 // Pins API
