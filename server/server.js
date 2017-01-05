@@ -71,8 +71,10 @@ app.post('/api/users', function(req, res) {
   if (req.body.fbID ) {
     uniqueID = req.body.fbID;
   } else {
-    uniqueID = uuidV1();
+    let split = email.split('@');
+    uniqueID = split[0];
   }
+
   request({
     uri: `http://localhost:1337/api/users/${uniqueID}`,
     method: "GET",
@@ -81,7 +83,7 @@ app.post('/api/users', function(req, res) {
       console.log("*** ERROR ***");
       console.log(err);
     } else {
-      if (!body[0].id) {
+      if (!JSON.parse(body)[0] || JSON.parse(body)[0].id !== uniqueID) {
         session
           .run('CREATE (n:User {          \
             firstName : {firstNameParam}, \
@@ -108,7 +110,7 @@ app.post('/api/users', function(req, res) {
             console.log(err);
           });
       } else {
-        response.status(400).send('User already exists');
+        res.status(400).send('User already exists');
       }
     }
   });

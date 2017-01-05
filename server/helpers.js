@@ -24,4 +24,15 @@ function userDoesExist(userID) {
     });
 }
 
+// function hashEmail(email) {
+//   var split = email.split('')
+//   for (var i = 0; i < email.length; i++) {
+//     let code = email.charCodeAt(i);
+    
+//     split[i] = String.fromCharCode(code+1);
+//   }
+//   return split.join('');
+// }
+
+
 exports.userDoesExist = userDoesExist;
