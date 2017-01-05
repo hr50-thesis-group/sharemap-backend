@@ -67,6 +67,7 @@ app.post('/api/users', function(req, res) {
   let email = req.body.email || 'No email';
   let photoUrl = req.body.photoUrl || 'No photo';
   let uniqueID = req.body.fbID !== null ? req.body.fbID : uuidV1();
+
   // check if user is already in DB
   if (helpers.userDoesExist(uniqueID)) {
     res.status(400).send('User already exists');
