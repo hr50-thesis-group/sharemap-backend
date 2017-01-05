@@ -50,8 +50,8 @@ app.get('/api/users', function(req, res) {
 app.get('/api/users/:userID', function(req, res) {
   var userID = req.params.userID;
   session.run (
-      'MATCH (u:User)       \
-      WHERE u.id = {userID} \
+      'MATCH (u:User)\
+      WHERE u.id = {userID}\
       RETURN u',
       {userID: userID}
     ) //('MATCH (n {id: {userID}}) DETACH DELETE n')
@@ -88,12 +88,12 @@ app.post('/api/users', function(req, res) {
     } else {
       if (!body[0].id) {
         session
-          .run('CREATE (n:User {          \
-            firstName : {firstNameParam}, \
-            lastName:{lastNameParam},     \
-            email:{emailParam},           \
-            photo:{photoParam},           \
-            id:{idParam}                  \
+          .run('CREATE (n:User {\
+            firstName : {firstNameParam},\
+            lastName:{lastNameParam},\
+            email:{emailParam},\
+            photo:{photoParam},\
+            id:{idParam}\
           }) RETURN n.firstName', {
             firstNameParam: firstName, 
             lastNameParam: lastName, 
@@ -130,11 +130,10 @@ app.delete('/api/users/:userID',function(req, res) {
  *             *
  * * * * * * * */
 
-
 // Returns with JSOn of all a user's pins
 app.get('/api/users/:userID/pins', function(req, res) {
   session
-    .run('MATCH (a: Pin) \
+    .run('MATCH (a: Pin)\
           RETURN a')
     .then(result => {
       res.status(200).send(result);
@@ -145,15 +144,34 @@ app.get('/api/users/:userID/pins', function(req, res) {
     })
 });
 
+
+// session.run (
+//       'MATCH (u:User)\
+//       WHERE u.id = {userID}\
+//       RETURN u',
+//       {userID: userID}
+//     ) //('MATCH (n {id: {userID}}) DETACH DELETE n')
+//     .then(result => {
+//       res.status(200).send(result.records.map(record => {
+//         return record._fields[0].properties;
+//       }));
+
+
 // Responds with a single pin
 app.get('/api/users/:userID/pins/:pinID', function(req, res) {
   var pinID = req.params.pinID;
+  console.log('test');
   session
-    .run('MATCH (a:pin)        \
-          WHERE a.id = {pinID} \
-          RETURN a')
+    .run('MATCH (a:Pin)\
+          WHERE a.id = {pinIDParam}\
+          RETURN a',
+          {
+            pinIDParam: pinID
+          })
     .then(result => {
-      res.status(200).send(result);
+      res.status(200).send(result.records.map(record => {
+        return record._fields[0].properties;
+      }));
       session.close();
     })
     .catch(err => {
@@ -161,38 +179,45 @@ app.get('/api/users/:userID/pins/:pinID', function(req, res) {
     })
 }); 
 
-// Creates a new pin
 app.post('/api/users/:userID/pins', function(req, res) {
+  let uniquePinID = uuidV1();
   let location = req.body.location;
   let mediaUrl = req.body.mediaUrl;
   let description = req.body.description || 'No description';
-  let createdAt = req.body.createdAt;
-  let userID = req.body.userID;
+  let createdAt = JSON.stringify(new Date());
+  let userID = req.params.userID;
+
+  var postHelper = function(user, pin) {
+    session.run
+  }
 
   session
-    .run('CREATE (a:Pin {                \
-        id: {pinIDParam}                 \
-        location: {locationParam},       \
-        mediaUrl: {mediaUrlParam},       \
-        description: {descriptionParam}, \
-        createdAt: {createdAtParam}      \
-      }) RETURN a                        \
-      MATCH (u:User {userID}), a       \
-      CREATE (u)-[:PINNED]->(a)' , {
-        pinIDParam: uuidV1(),
+    .run('CREATE (a:Pin {\
+        id: {pinIDParam},\
+        location: {locationParam},\
+        mediaUrl: {mediaUrlParam},\
+        description: {descriptionParam},\
+        createdAt: {createdAtParam}\
+      })-[:PINNED_BY]->(u {id: {userIDParam}})\
+      RETURN a', {
+        pinIDParam: uniquePinID,
         locationParam: location,
         mediaUrlParam: mediaUrl,
         descriptionParam: description,
-        createdAtParam: createdAt
+        createdAtParam: createdAt,
+        userIDParam: userID
       }
     )
+  
     .then(result => {
       console.log('Successfully posted pin: ', result);
-      // !! PASS RESULT TO PIN MDOELHERE !!
+      // !! PASS RESULT TO PIN MODEL HERE !!
       res.status(201).send(result);
       session.close();
     })
     .catch(err => {
+      session.close();
+      console.log("*** ERROR ***");
       console.log(err);
     })
 });
@@ -201,7 +226,7 @@ app.delete('/api/users/:userID/pins/:pinID', function(req, res) {
   let pinID = req.body.param.id;
 
   session
-    .run('MATCH (a { id:{pinID} } \
+    .run('MATCH (a { id:{pinID} }\
         DETACH DELETE a)'
     )
     .then(result => {
@@ -219,8 +244,8 @@ app.put('/api/users/:userID/pins/:pinID', function(req, res) {
   let newDesc = req.body.param.description;
 
   session
-    .run('MATCH (a {id: {pinID} })  \
-      SET a.description = {newDesc} \
+    .run('MATCH (a {id: {pinID} })\
+      SET a.description = {newDesc}\
       RETURN a'                        
     )
     .then(result => {
