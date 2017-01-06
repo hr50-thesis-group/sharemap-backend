@@ -246,13 +246,16 @@ app.delete('/api/users/:userID/pins/:pinID', function(req, res) {
 // Updates a pin description
 app.put('/api/users/:userID/pins/:pinID', function(req, res) {
   let pinID = req.params.pinID;
-  let newDesc = req.body.param.description;
+  let newDesc = req.body.description;
 
   session
-    .run('MATCH (a {id: {pinID} })\
-      SET a.description = {newDesc}\
-      RETURN a'                        
-    )
+    .run('MATCH (a {id: {pinIDParam} })\
+      SET a.description = {newDescParam}\
+      RETURN a',
+    {
+      pinIDParam: pinID,
+      newDescParam: newDesc
+    })
     .then(result => {
       res.status(200).send(result);
       session.close();
