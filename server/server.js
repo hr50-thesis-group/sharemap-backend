@@ -67,7 +67,7 @@ app.get('/api/users/:userID', function(req, res) {
 });
 
 // Creates a new User
-app.post('/api/users', function(req, res) {
+app.post('/api/users', function(req, res) {app.post('/api/users', function(req, res) {
   let firstName = req.body.firstName;
   let lastName = req.body.lastName;
   let email = req.body.email || 'No email';
@@ -76,30 +76,32 @@ app.post('/api/users', function(req, res) {
   if (req.body.fbID ) {
     uniqueID = req.body.fbID;
   } else {
-    uniqueID = uuidV1();
+    let split = email.split('@');
+    uniqueID = split[0];
   }
+
   request({
     uri: `http://localhost:1337/api/users/${uniqueID}`,
-    method: 'GET',
+    method: "GET",
   }, (err, response, body) => {
     if (err) {
-      console.log('*** ERROR ***');
+      console.log("*** ERROR ***");
       console.log(err);
     } else {
-      if (!body[0].id) {
+      if (!JSON.parse(body)[0] || JSON.parse(body)[0].id !== uniqueID) {
         session
-          .run('CREATE (n:User {\
-            firstName : {firstNameParam},\
-            lastName:{lastNameParam},\
-            email:{emailParam},\
-            photo:{photoParam},\
-            id:{idParam}\
+          .run('CREATE (n:User {          \
+            firstName : {firstNameParam}, \
+            lastName:{lastNameParam},     \
+            email:{emailParam},           \
+            photo:{photoParam},           \
+            id:{idParam}                  \
           }) RETURN n.firstName', {
             firstNameParam: firstName, 
             lastNameParam: lastName, 
-            emailParam: email, 
-            photoParam: photoUrl, 
-            idParam: uniqueID
+            emailParam:email, 
+            photoParam:photoUrl, 
+            idParam:uniqueID
           })
           .then(result => {
             console.log('successfully posted: ', result);
@@ -109,11 +111,11 @@ app.post('/api/users', function(req, res) {
           })
           .catch(err => {
             session.close();
-            console.log('*** ERROR ***');
+            console.log("*** ERROR ***");
             console.log(err);
           });
       } else {
-        response.status(400).send('User already exists');
+        res.status(400).send('User already exists');
       }
     }
   });

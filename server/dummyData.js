@@ -1,4 +1,4 @@
-user POST
+// user POST
 {
   "firstName": "Tim",
   "lastName": "Chin",
@@ -23,7 +23,7 @@ user POST
   "email": "stevenjing@gmail.com"
 }
 
-pin POST
+// pin POST
 {
   "location": {
     "latitude": 25,
