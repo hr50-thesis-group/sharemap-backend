@@ -121,7 +121,23 @@ app.post('/api/users', function(req, res) {
 
 // Deletes a specified user
 app.delete('/api/users/:userID', function(req, res) {
-
+  let userID = req.params.userID;
+  console.log(userID);
+  
+  session
+    .run('MATCH (n:User { id:{userIDParam} })\
+          MATCH (a: Pin { userID: {userIDParam} })\
+          DETACH DELETE n, a',
+    {
+      userIDParam: userID
+    })
+    .then(result => {
+      res.status(200).send(result);
+      session.close();
+    })
+    .catch(err => {
+      console.log(err);
+    });
 });
 
 /* * * * * * * *
@@ -175,18 +191,16 @@ app.post('/api/users/:userID/pins', function(req, res) {
   let userID = req.params.userID;
 
   session
-    .run(' MATCH (u:User {id: {userIDParam}})\
+    .run(' MATCH (n:User {id: {userIDParam}})\
         CREATE (a:Pin {\
         id: {pinIDParam},\
         location: {locationParam},\
         mediaUrl: {mediaUrlParam},\
         description: {descriptionParam},\
         createdAt: {createdAtParam},\
-        userID: {userIDParam},\
-        userFirst: u.firstName,\
-        userLast: u.lastName\
-      }) MERGE (a)<-[:PINNED]-(u)\
-         RETURN *', 
+        userID: {userIDParam}\
+      }) MERGE (a)<-[:PINNED]-(n)\
+         RETURN a.description', 
     { //:User {id: {userIDParam}}
       pinIDParam: uniquePinID,
       locationParam: location,
@@ -209,12 +223,15 @@ app.post('/api/users/:userID/pins', function(req, res) {
 });
 
 app.delete('/api/users/:userID/pins/:pinID', function(req, res) {
-  let pinID = req.body.param.id;
+  let pinID = req.params.pinID;
+  console.log(pinID);
 
   session
-    .run('MATCH (a { id:{pinID} }\
-        DETACH DELETE a)'
-    )
+    .run('MATCH (a { id: {pinIDParam} })\
+        DETACH DELETE a',
+    {
+      pinIDParam: pinID
+    })
     .then(result => {
       res.status(200).send(result);
       session.close();
@@ -226,8 +243,9 @@ app.delete('/api/users/:userID/pins/:pinID', function(req, res) {
 
 // Updates a pin description
 app.put('/api/users/:userID/pins/:pinID', function(req, res) {
-  let pinID = req.body.param.id;
+  let pinID = req.params.pinID;
   let newDesc = req.body.param.description;
+
   session
     .run('MATCH (a {id: {pinID} })\
       SET a.description = {newDesc}\
