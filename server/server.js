@@ -180,7 +180,8 @@ app.post('/api/users/:userID/pins', function(req, res) {
         location: {locationParam},\
         mediaUrl: {mediaUrlParam},\
         description: {descriptionParam},\
-        createdAt: {createdAtParam}\
+        createdAt: {createdAtParam},\
+        userID: {userIDParam}\
       }) MERGE (a)<-[:PINNED]-(u:User {id: {userIDParam}})\
          RETURN a', 
     {
