@@ -602,27 +602,29 @@ app.delete('/api/users/:userID/pins/:pinID', function(req, res) {
 });
 
 // Updates a pin description
-// app.put('/api/users/:userID/pins/:pinID', function(req, res) {
-//   let pinID = req.params.pinID;
-//   let newDesc = req.body.description;
+app.put('/api/users/:userID/pins/:pinID', function(req, res) {
+  let pinID = req.params.pinID;
+  let newDesc = req.body.param.description;
 
-//   session
-//     .run('MATCH (a {id: {pinID} })\
-//       SET a.description = {newDesc}\
-//       RETURN a'                        
-//     )
-//     .then(result => {
-//       res.status(200).send(result);
-//       session.close();
-//     })
-//     .catch(err => {
-//       console.log(err);
-//     });
-// });
+  session
+    .run('MATCH (a {id: {pinID} })\
+      SET a.description = {newDesc}\
+      RETURN a'                        
+    )
+    .then(result => {
+      res.status(200).send(result);
+      session.close();
+    })
+    .catch(err => {
+      console.log(err);
+    });
+});
+
 
 app.post('/upload', upload.single('file'), (req, res, next) => {
-  res.json(req.file)
+  res.json(req.file);
 });
+
 
 app.post('/postpin', (req, res, next) => {
   console.log('/postpin post request received');
