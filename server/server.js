@@ -181,17 +181,16 @@ app.post('/api/users/:userID/pins', function(req, res) {
         mediaUrl: {mediaUrlParam},\
         description: {descriptionParam},\
         createdAt: {createdAtParam}\
-      })-[:PINNED_BY]->(u {id: {userIDParam}})\
-      RETURN a', {
-        pinIDParam: uniquePinID,
-        locationParam: location,
-        mediaUrlParam: mediaUrl,
-        descriptionParam: description,
-        createdAtParam: createdAt,
-        userIDParam: userID
-      }
-    )
-  
+      }) MERGE (a)<-[:PINNED]-(u:User {id: {userIDParam}})\
+         RETURN a', 
+    {
+      pinIDParam: uniquePinID,
+      locationParam: location,
+      mediaUrlParam: mediaUrl,
+      descriptionParam: description,
+      createdAtParam: createdAt,
+      userIDParam: userID
+    })
     .then(result => {
       console.log('Successfully posted pin: ', result);
       // !! PASS RESULT TO PIN MODEL HERE !!
