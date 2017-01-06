@@ -6,21 +6,33 @@ var helpers = require('./helpers.js');
 var request = require('request');
 var bodyParser = require('body-parser');
 var jsonParser = bodyParser.json();
-var fs = require('fs');
+const aws = require('aws-sdk');
+const multer = require('multer');
+const multerS3 = require('multer-s3');
 
 // .env access
 require('dotenv').config();
 
-// s3 file system setup
-var S3FS = require('s3fs');
-var s3fsImpl = new S3FS('sharemap', {
+// initialize aws s3 
+const s3 = new aws.S3({
   accessKeyId: process.env.AWS_ACCESS_ID,
   secretAccessKey: process.env.AWS_ACCESS_KEY,
 });
 
-// middleware for AWS
-var multiparty = require('connect-multiparty');
-var multipartyMiddleware = multiparty();
+// Initialize multers3 with our s3 config and other options
+const upload = multer({
+  storage: multerS3({
+    s3,
+    bucket: 'sharemap',
+    acl: 'public-read',
+    metadata(req, file, cb) {
+      cb(null, {fieldName: file.fieldname});
+    },
+    key(req, file, cb) {
+      cb(null, Date.now().toString() + '.png');
+    }
+  })
+});
 
 // START SERVER; CONNECT DATABASE
 var app = express();
@@ -254,22 +266,9 @@ app.put('/api/users/:userID/pins/:pinID', function(req, res) {
     });
 });
 
-app.post('/testupload', multipartyMiddleware, (req, res) => {
-  var file = req.files.file;
-  var stream = fs.createReadStream(file.path);
-  return s3fsImpl.writeFile(file.originalFilename, stream)
-          .then(() => {
-            fs.unlink(file.path, (err) => {
-              if (err) {
-                console.err(err);
-                throw err;
-              }
-            })
-            res.status(200).send('Image Posted');
-            console.log('SUCCESS');
-          });
+app.post('/upload', upload.single('file'), (req, res, next) => {
+  res.json(req.file)
 });
-
 
 exports.app = app;
 
