@@ -6,6 +6,21 @@ var helpers = require('./helpers.js');
 var request = require('request');
 var bodyParser = require('body-parser');
 var jsonParser = bodyParser.json();
+var fs = require('fs');
+
+// .env access
+require('dotenv').config();
+
+// s3 file system setup
+var S3FS = require('s3fs');
+var s3fsImpl = new S3FS('sharemap', {
+  accessKeyId: process.env.AWS_ACCESS_ID,
+  secretAccessKey: process.env.AWS_ACCESS_KEY,
+});
+
+// middleware for AWS
+var multiparty = require('connect-multiparty');
+var multipartyMiddleware = multiparty();
 
 // START SERVER; CONNECT DATABASE
 var app = express();
@@ -237,6 +252,22 @@ app.put('/api/users/:userID/pins/:pinID', function(req, res) {
     .catch(err => {
       console.log(err);
     });
+});
+
+app.post('/testupload', multipartyMiddleware, (req, res) => {
+  var file = req.files.file;
+  var stream = fs.createReadStream(file.path);
+  return s3fsImpl.writeFile(file.originalFilename, stream)
+          .then(() => {
+            fs.unlink(file.path, (err) => {
+              if (err) {
+                console.err(err);
+                throw err;
+              }
+            })
+            res.status(200).send('Image Posted');
+            console.log('SUCCESS');
+          });
 });
 
 
