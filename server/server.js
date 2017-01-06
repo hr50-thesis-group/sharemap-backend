@@ -168,7 +168,7 @@ app.get('/api/users/:userID/pins/:pinID', function(req, res) {
 
 app.post('/api/users/:userID/pins', function(req, res) {
   let uniquePinID = uuidV1();
-  let location = req.body.location;
+  let location = JSON.stringify(req.body.location);
   let mediaUrl = req.body.mediaUrl;
   let description = req.body.description || 'No description';
   let createdAt = JSON.stringify(new Date());
