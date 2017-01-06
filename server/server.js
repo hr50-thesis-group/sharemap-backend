@@ -175,16 +175,19 @@ app.post('/api/users/:userID/pins', function(req, res) {
   let userID = req.params.userID;
 
   session
-    .run('CREATE (a:Pin {\
+    .run(' MATCH (u:User {id: {userIDParam}})\
+        CREATE (a:Pin {\
         id: {pinIDParam},\
         location: {locationParam},\
         mediaUrl: {mediaUrlParam},\
         description: {descriptionParam},\
         createdAt: {createdAtParam},\
-        userID: {userIDParam}\
-      }) MERGE (a)<-[:PINNED]-(u:User {id: {userIDParam}})\
-         RETURN a', 
-    {
+        userID: {userIDParam},\
+        userFirst: u.firstName,\
+        userLast: u.lastName\
+      }) MERGE (a)<-[:PINNED]-(u)\
+         RETURN *', 
+    { //:User {id: {userIDParam}}
       pinIDParam: uniquePinID,
       locationParam: location,
       mediaUrlParam: mediaUrl,
