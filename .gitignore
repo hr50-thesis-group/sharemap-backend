@@ -1,4 +1,5 @@
 ### node etc ###
+.env
 
 # Logs
 logs
