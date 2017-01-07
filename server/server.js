@@ -545,6 +545,7 @@ app.post('/api/users/:userID/pins', function(req, res) {
   let createdAt = JSON.stringify(new Date());
   let userID = req.params.userID;
   let category = req.body.category;
+  let likes = 0;
 
   session
     .run('MATCH (n:User {id: {userIDParam}})\
@@ -555,7 +556,7 @@ app.post('/api/users/:userID/pins', function(req, res) {
         description: {descriptionParam},\
         createdAt: {createdAtParam},\
         category: {categoryParam},\
-        userID: {userIDParam}\
+        likes: {likesParam}\
       }) MERGE (a)<-[:PINNED]-(n)\
          RETURN a.description', 
     { //:User {id: {userIDParam}}
@@ -565,7 +566,8 @@ app.post('/api/users/:userID/pins', function(req, res) {
       descriptionParam: description,
       categoryParam: category,
       createdAtParam: createdAt,
-      userIDParam: userID
+      userIDParam: userID,
+      likesParam: likes
     })
     .then(result => {
       session
