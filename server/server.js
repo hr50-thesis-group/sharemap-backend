@@ -270,6 +270,11 @@ app.post('/upload', upload.single('file'), (req, res, next) => {
   res.json(req.file)
 });
 
+app.post('/postpin', (req, res, next) => {
+  console.log('/postpin post request received');
+  res.send('hi');
+});
+
 exports.app = app;
 
 
