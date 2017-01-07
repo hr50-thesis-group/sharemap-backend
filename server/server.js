@@ -389,19 +389,11 @@ app.post('/api/users', function(req, res) {
             photo:{photoParam},           \
             id:{idParam}                  \
           }) RETURN n.firstName', {
-<<<<<<< HEAD
             firstNameParam: firstName.toLowerCase(), 
             lastNameParam: lastName.toLowerCase(), 
             emailParam:email, 
             photoParam:photoUrl, 
             idParam:uniqueID
-=======
-            firstNameParam: firstName, 
-            lastNameParam: lastName, 
-            emailParam: email, 
-            photoParam: photoUrl, 
-            idParam: uniqueID
->>>>>>> Add test url for Pin Post
           })
           .then(result => {
             res.status(201).send(result);
@@ -551,6 +543,7 @@ app.post('/api/users/:userID/pins', function(req, res) {
   let createdAt = JSON.stringify(new Date());
   let userID = req.params.userID;
   let category = req.body.category;
+  let likes = 0;
 
   session
     .run('MATCH (n:User {id: {userIDParam}})\
@@ -571,7 +564,8 @@ app.post('/api/users/:userID/pins', function(req, res) {
       descriptionParam: description,
       categoryParam: category,
       createdAtParam: createdAt,
-      userIDParam: userID
+      userIDParam: userID,
+      likesParam = likes
     })
     .then(result => {
       session
@@ -608,6 +602,7 @@ app.delete('/api/users/:userID/pins/:pinID', function(req, res) {
       console.log(err);
     });
 });
+
 
 // Updates a pin description
 app.put('/api/users/:userID/pins/:pinID', function(req, res) {
