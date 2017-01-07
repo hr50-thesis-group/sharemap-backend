@@ -11,28 +11,28 @@ const multer = require('multer');
 const multerS3 = require('multer-s3');
 
 // .env access
-require('dotenv').config();
+// require('dotenv').config();
 
-// initialize aws s3 
-const s3 = new aws.S3({
-  accessKeyId: process.env.AWS_ACCESS_ID,
-  secretAccessKey: process.env.AWS_ACCESS_KEY,
-});
+// // initialize aws s3 
+// const s3 = new aws.S3({
+//   accessKeyId: process.env.AWS_ACCESS_ID,
+//   secretAccessKey: process.env.AWS_ACCESS_KEY,
+// });
 
-// Initialize multers3 with our s3 config and other options
-const upload = multer({
-  storage: multerS3({
-    s3,
-    bucket: 'sharemap',
-    acl: 'public-read',
-    metadata(req, file, cb) {
-      cb(null, {fieldName: file.fieldname});
-    },
-    key(req, file, cb) {
-      cb(null, Date.now().toString() + '.png');
-    }
-  })
-});
+// // Initialize multers3 with our s3 config and other options
+// const upload = multer({
+//   storage: multerS3({
+//     s3,
+//     bucket: 'sharemap',
+//     acl: 'public-read',
+//     metadata(req, file, cb) {
+//       cb(null, {fieldName: file.fieldname});
+//     },
+//     key(req, file, cb) {
+//       cb(null, Date.now().toString() + '.png');
+//     }
+//   })
+// });
 
 // START SERVER; CONNECT DATABASE
 var app = express();
@@ -76,6 +76,7 @@ app.get('/api/users', function(req, res) {
 // Responds with JSON of user model
 app.get('/api/users/:userID', function(req, res) {
   var userID = req.params.userID;
+
   session.run (
       'MATCH (u:User)\
       WHERE u.id = {userID}\
@@ -177,9 +178,12 @@ app.delete('/api/users/:userID', function(req, res) {
 
 // Returns with JSOn of all a user's pins
 app.get('/api/users/:userID/pins', function(req, res) {
+  var userID = req.params.userID;
+
   session
-    .run('MATCH (a: Pin)\
-          RETURN a')
+    .run('MATCH (n:User {id:{userIDParam}})\
+          MATCH (pin)<-[:PINNED]-(n)  \
+          RETURN pin', {userIDParam: userID})
     .then(result => {
       res.status(200).send(result);
       session.close;
@@ -205,6 +209,7 @@ app.get('/api/users/:userID/pins/:pinID', function(req, res) {
         return record._fields[0].properties;
       }));
       session.close();
+
     })
     .catch(err => {
       console.log(err);
@@ -289,9 +294,9 @@ app.put('/api/users/:userID/pins/:pinID', function(req, res) {
     });
 });
 
-app.post('/upload', upload.single('file'), (req, res, next) => {
-  res.json(req.file)
-});
+// app.post('/upload', upload.single('file'), (req, res, next) => {
+//   res.json(req.file)
+// });
 
 app.post('/postpin', (req, res, next) => {
   console.log('/postpin post request received');
