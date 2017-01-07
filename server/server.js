@@ -371,10 +371,10 @@ app.post('/api/users', function(req, res) {
 
   request({
     uri: `http://localhost:1337/api/users/${uniqueID}`,
-    method: "GET",
+    method: 'GET',
   }, (err, response, body) => {
     if (err) {
-      console.log("*** ERROR ***");
+      console.log('*** ERROR ***');
       console.log(err);
     } else {
       if (!JSON.parse(body)[0] || JSON.parse(body)[0].id !== uniqueID) {
@@ -389,11 +389,19 @@ app.post('/api/users', function(req, res) {
             photo:{photoParam},           \
             id:{idParam}                  \
           }) RETURN n.firstName', {
+<<<<<<< HEAD
             firstNameParam: firstName.toLowerCase(), 
             lastNameParam: lastName.toLowerCase(), 
             emailParam:email, 
             photoParam:photoUrl, 
             idParam:uniqueID
+=======
+            firstNameParam: firstName, 
+            lastNameParam: lastName, 
+            emailParam: email, 
+            photoParam: photoUrl, 
+            idParam: uniqueID
+>>>>>>> Add test url for Pin Post
           })
           .then(result => {
             res.status(201).send(result);
@@ -401,7 +409,7 @@ app.post('/api/users', function(req, res) {
           })
           .catch(err => {
             session.close();
-            console.log("*** ERROR ***");
+            console.log('*** ERROR ***');
             console.log(err);
           });
       } else {
@@ -623,12 +631,6 @@ app.put('/api/users/:userID/pins/:pinID', function(req, res) {
 
 app.post('/upload', upload.single('file'), (req, res, next) => {
   res.json(req.file);
-});
-
-
-app.post('/postpin', (req, res, next) => {
-  console.log('/postpin post request received');
-  res.send('hi');
-});
+ 
 
 exports.app = app;
