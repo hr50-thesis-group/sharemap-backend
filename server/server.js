@@ -86,7 +86,18 @@ app.get('/api/users', function(req, res) {
         console.log(err);
       });
     }
-  } 
+  } else {
+    session.run('MATCH(n:User) RETURN n').then(result => {
+      res.send(result.records.map(record => {
+        return record._fields[0].properties;
+      }));
+    session.close();
+    })
+    .catch(err => {
+      console.log('*** ERROR ***');
+      console.log(err);
+    });
+  }
 });
 
 // Responds with JSON of user model
