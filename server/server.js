@@ -60,17 +60,33 @@ app.get('/', function(req, res) {
 
 // Responds with JSON of all users
 app.get('/api/users', function(req, res) {
-  // query DB for all users, send all user models
-  session.run('MATCH(n:User) RETURN n').then(result => {
-    res.send(result.records.map(record => {
-      return record._fields[0].properties;
-    }));
-    session.close();
-  })
-  .catch(err => {
-    console.log('*** ERROR ***');
-    console.log(err);
-  });
+
+  // if query paramesters are provided, execute a search
+  if (!!Object.keys(req.query).length) {
+    var firstName = req.query.firstName; 
+    var lastName = req.query.lastName;
+
+    // reject request if the client didn't provide proper query paramters (bad syntax)
+    if (!(firstName && lastName)) {
+      console.log('bad params');
+      res.status(400);
+      res.send('Bad request. Use firstName and lastName query parameters only');
+    } else {
+      // query DB for users whose first name and last name match query parameters
+      session.run(
+        `MATCH(n:User {firstName: '${firstName.toLowerCase()}', 
+        lastName: '${lastName.toLowerCase()}'}) RETURN n`).then(result => {
+          res.send(result.records.map(record => {
+            return record._fields[0].properties;
+          }));
+          session.close();
+        })
+      .catch(err => {
+        console.log('*** ERROR ***');
+        console.log(err);
+      });
+    }
+  } 
 });
 
 // Responds with JSON of user model
@@ -125,8 +141,8 @@ app.post('/api/users', function(req, res) {
             photo:{photoParam},           \
             id:{idParam}                  \
           }) RETURN n.firstName', {
-            firstNameParam: firstName, 
-            lastNameParam: lastName, 
+            firstNameParam: firstName.toLowerCase(), 
+            lastNameParam: lastName.toLowerCase(), 
             emailParam:email, 
             photoParam:photoUrl, 
             idParam:uniqueID
@@ -197,7 +213,7 @@ app.get('/api/users/:userID/pins', function(req, res) {
 // Responds with a single pin
 app.get('/api/users/:userID/pins/:pinID', function(req, res) {
   var pinID = req.params.pinID;
-  console.log('test');
+
   session
     .run('MATCH (a:Pin)\
           WHERE a.id = {pinIDParam}\
