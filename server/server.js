@@ -250,6 +250,7 @@ app.post('/api/users/:userID/pins', function(req, res) {
   let description = req.body.description || 'No description';
   let createdAt = JSON.stringify(new Date());
   let userID = req.params.userID;
+  let category = req.body.category;
 
   session
     .run(' MATCH (n:User {id: {userIDParam}})\
@@ -258,6 +259,7 @@ app.post('/api/users/:userID/pins', function(req, res) {
         location: {locationParam},\
         mediaUrl: {mediaUrlParam},\
         description: {descriptionParam},\
+        category: {categoryParam}, \
         createdAt: {createdAtParam},\
         userID: {userIDParam}\
       }) MERGE (a)<-[:PINNED]-(n)\
@@ -267,6 +269,7 @@ app.post('/api/users/:userID/pins', function(req, res) {
       locationParam: location,
       mediaUrlParam: mediaUrl,
       descriptionParam: description,
+      categoryParam: category,
       createdAtParam: createdAt,
       userIDParam: userID
     })
