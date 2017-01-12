@@ -118,6 +118,26 @@ app.get('/api/users/:userID', function(req, res) {
     })
     .catch(error => {
       console.log(error);
+      session.close();
+    });
+});
+
+app.post('/api/users/:userID/friendships', function(req, res) {
+  var friendshipReceiver = req.params.userID;
+  var friendshipGiver = req.body.id;
+
+  session.run (
+    `MATCH (u:User {id:'${friendshipGiver}'}), 
+    (r:User {id:'${friendshipReceiver}'})
+    CREATE (u-[:FRIENDED]->(r)`
+    ) 
+    .then(result => {
+      res.status(201).send();
+      session.close();
+    })
+    .catch(error => {
+      console.log(error);
+      session.close();
     });
 });
 
