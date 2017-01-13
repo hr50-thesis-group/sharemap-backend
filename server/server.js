@@ -10,6 +10,9 @@ var dispatcher = require('./notificationDispatcher.js');
 const aws = require('aws-sdk');
 const multer = require('multer');
 const multerS3 = require('multer-s3');
+var bcrypt = require('bcrypt');
+var expressJWT = require('express-jwt');
+var jwt = require('jsonwebtoken');
 
 // .env access
 require('dotenv').config();
@@ -46,6 +49,15 @@ app.listen(1337, function() {
 
 app.use(jsonParser);
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use(expressJWT({ secret: 'sharemap-secret' })  
+  .unless({
+    path: [
+      '/api/login',
+      '/api/signup',
+      '/api/users',
+    ],
+  }));
+
 
 app.get('/', function(req, res) {
   res.send('hi');
@@ -58,6 +70,112 @@ app.get('/', function(req, res) {
  *             *
  * * * * * * * */
 
+app.post('/api/signup', (req, res, next) => {
+  let { email, password, firstName, lastName } = req.body;
+  session.run (
+    'MATCH (n:User)\
+    WHERE n.email = {emailParam}\
+    RETURN n',
+    {emailParam: email}
+  )
+  .then(result => {
+    if (result.records.length) {
+      console.log('USER ALREADY EXISTS');
+      console.log('RESULT****', result);
+      session.close();
+      res.status(400).send('User already exists');
+    } else {
+      console.log('USER WAS NOT FOUND');
+      console.log('CREATING NEW USER...');
+      console.log('RESULT****', result);
+      const saltRounds = 10;
+      bcrypt.hash(password, saltRounds, (err, hash) => {
+        if (err) {
+          console.error('An error while hashing user\'s password');
+          throw err;
+        }
+        let userToken = jwt.sign({ email }, 'sharemap-secret', {
+          expiresIn: "24h"
+        });
+        let uniqueID = uuidV1();
+
+        console.log('GOT HERE THO***************');
+        session
+          .run('CREATE (n:User {\
+            firstName : {firstNameParam},\
+            lastName:{lastNameParam},\
+            email:{emailParam},\
+            id:{idParam}\
+            token:{tokenParam}\
+          }) RETURN n.firstName', {
+            firstNameParam: firstName, 
+            lastNameParam: lastName, 
+            emailParam: email, 
+            idParam: uniqueID,
+            tokenParam: userToken,
+          })
+          .then(result => {
+            session.close();
+            console.log('successfully posted: ', result);
+            res.status(201).send(userToken);
+          })
+          .catch(err => {
+            session.close();
+            console.log('POST /api/signup: An error occurred while creating a new user');
+            console.log(err);
+            throw err;
+          });
+        session.close();
+      });
+    }
+  })
+  .catch(error => {
+    console.log('POST /api/signup: An error occurred querying an user');
+    throw error;
+  });
+});
+
+app.post('/api/login', (req, res, next) => {
+  let { email, password } = req.body;
+
+  // query database for user with email
+  session.run (
+    'MATCH (n:User)\
+    WHERE n.email = {emailParam}\
+    RETURN n',
+    {emailParam: email}
+  )
+  .then(result => {
+    session.close();
+    if (result.records.length) {  // if user was found
+      console.log('USER FOUND', email);
+
+
+      /********************************************/
+      /********************************************/
+      /********************************************/
+      // start working here: grab hashed password
+      // from query and compare to plain text password
+      /********************************************/
+      /********************************************/
+      /********************************************/
+      /********************************************/
+      // bcrypt.compare(myPlaintextPassword, hash)
+      //   .then(function(res) {
+      //     // res == true 
+      //   });
+
+    } else {  // if user was not found
+      console.log('USER NOT FOUND w/ email', email);
+      res.status(400).send('User was not found with email', email);
+    }
+  })
+  .catch(error => {
+    session.close();
+    console.log('POST /api/login: An error occurred querying user with email', email);
+    throw error;
+  });
+});
 
 // Responds with JSON of all users
 app.get('/api/users', function(req, res) {
@@ -200,6 +318,9 @@ app.post('/api/users', function(req, res) {
       console.log(err);
     } else {
       if (!JSON.parse(body)[0] || JSON.parse(body)[0].id !== uniqueID) {
+        let userToken = jwt.sign({ email }, 'sharemap-secret', {
+          expiresIn: "24h"
+        });
         session
           .run('CREATE (n:User {          \
             firstName : {firstNameParam}, \
@@ -251,6 +372,41 @@ app.put('/api/users/:userID/', function(req, res) {
     })
     .catch(err => {
       console.log(err);
+    });
+});
+
+// Responds with JSON of all users
+app.get('/api/users', function(req, res) {
+  // query DB for all users, send all user models
+  session.run('MATCH(n:User) RETURN n').then(result => {
+    res.send(result.records.map(record => {
+      return record._fields[0].properties;
+    }));
+    session.close();
+  })
+  .catch(err => {
+    console.log('*** ERROR ***');
+    console.log(err);
+  });
+});
+
+// Responds with JSON of user model
+app.get('/api/users/:userID', function(req, res) {
+  var userID = req.params.userID;
+  session.run (
+      'MATCH (u:User)\
+      WHERE u.id = {userID}\
+      RETURN u',
+      {userID: userID}
+    ) //('MATCH (n {id: {userID}}) DETACH DELETE n')
+    .then(result => {
+      res.status(200).send(result.records.map(record => {
+        return record._fields[0].properties;
+      }));
+      session.close();
+    })
+    .catch(error => {
+      console.log(error);
     });
 });
 
