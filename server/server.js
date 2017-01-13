@@ -127,9 +127,7 @@ app.post('/api/users/:userID/friendships', function(req, res) {
   var friendshipGiver = req.body.id.toString();
 
   session.run(
-    'MATCH (u:User {id:{friendshipGiverParam}}), \
-    (r:User {id:{friendshipReceiver}}) \
-    CREATE (u-[:FRIENDED]->(r)', {
+    'MATCH (u:User {id:{friendshipGiverParam}}), (r:User {id:{friendshipReceiver}}) CREATE (u-[:FRIENDED]->(r)', {
       friendshipGiverParam: friendshipGiver,
       friendshipReceiverParam: friendshipReceiver
     }) 
