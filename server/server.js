@@ -126,11 +126,12 @@ app.post('/api/users/:userID/friendships', function(req, res) {
   var friendshipReceiver = req.params.userID.toString();
   var friendshipGiver = req.body.id.toString();
 
-  session.run('MATCH (n:User {id: {friendshipGiverParam}})-[r:FRIENDED]->(m:User {id: {friendshipReceiverParam}}) RETURN SIGN(COUNT(r))', {
+  session.run('MATCH (n:User {id: {friendshipGiverParam}})-[r:FRIENDED]->(m:User {id: {friendshipReceiverParam}}) RETURN n', {
         friendshipGiverParam: friendshipGiver,
         friendshipReceiverParam: friendshipReceiver
       })
   .then(result => {
+    console.log('result', result);
     if (result === 0) {
       session.run(
       'MATCH (u:User {id:{friendshipGiverParam}}), (r:User {id:{friendshipReceiverParam}}) CREATE (u)-[:FRIENDED]->(r)', {
