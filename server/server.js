@@ -272,7 +272,7 @@ app.get('/api/users', function(req, res) {
       res.send(result.records.map(record => {
         return record._fields[0].properties;
       }));
-    session.close();
+      session.close();
     })
     .catch(err => {
       console.log('*** ERROR ***');
@@ -329,9 +329,9 @@ app.post('/api/users/:userID/friendships', function(req, res) {
   var friendshipGiver = req.body.id.toString();
 
   session.run('MATCH (n:User {id: {friendshipGiverParam}})-[r:FRIENDED]->(m:User {id: {friendshipReceiverParam}}) RETURN n', {
-        friendshipGiverParam: friendshipGiver,
-        friendshipReceiverParam: friendshipReceiver
-      })
+    friendshipGiverParam: friendshipGiver,
+    friendshipReceiverParam: friendshipReceiver
+  })
   .then(result => {
     if (result.records.length === 0) {
       session.run(
@@ -353,7 +353,7 @@ app.post('/api/users/:userID/friendships', function(req, res) {
       console.log('the current already friended the other user');
       res.status(400).send('the current already friended the other user');
     }
-  })
+  });
 });
 
 // Creates a new User
@@ -373,10 +373,10 @@ app.post('/api/users', function(req, res) {
 
   request({
     uri: `http://localhost:1337/api/users/${uniqueID}`,
-    method: "GET",
+    method: 'GET',
   }, (err, response, body) => {
     if (err) {
-      console.log("*** ERROR ***");
+      console.log('*** ERROR ***');
       console.log(err);
     } else {
       if (!JSON.parse(body)[0] || JSON.parse(body)[0].id !== uniqueID) {
@@ -393,9 +393,9 @@ app.post('/api/users', function(req, res) {
           }) RETURN n.firstName', {
             firstNameParam: firstName.toLowerCase(), 
             lastNameParam: lastName.toLowerCase(), 
-            emailParam:email, 
-            photoParam:photoUrl, 
-            idParam:uniqueID
+            emailParam: email, 
+            photoParam: photoUrl, 
+            idParam: uniqueID
           })
           .then(result => {
             res.status(201).send(result);
@@ -403,7 +403,7 @@ app.post('/api/users', function(req, res) {
           })
           .catch(err => {
             session.close();
-            console.log("*** ERROR ***");
+            console.log('*** ERROR ***');
             console.log(err);
           });
       } else {
@@ -497,7 +497,7 @@ app.delete('/api/users/:userID', function(req, res) {
  *             *
  * * * * * * * */
 
-// Returns with JSOn of all a user's pins
+// Returns with JSON of all a user's pins
 app.get('/api/users/:userID/pins', function(req, res) {
   var userID = req.params.userID;
 
@@ -545,6 +545,7 @@ app.post('/api/users/:userID/pins', function(req, res) {
   let createdAt = JSON.stringify(new Date());
   let userID = req.params.userID;
   let category = req.body.category;
+  let privacy = req.body.privacy;
   let likes = 0;
 
   session
@@ -555,7 +556,9 @@ app.post('/api/users/:userID/pins', function(req, res) {
         mediaUrl: {mediaUrlParam},\
         description: {descriptionParam},\
         createdAt: {createdAtParam},\
+        userID: {userIDParam},\
         category: {categoryParam},\
+        privacy: {privacyParam},\
         likes: {likesParam}\
       }) MERGE (a)<-[:PINNED]-(n)\
          RETURN a.description', 
@@ -564,9 +567,10 @@ app.post('/api/users/:userID/pins', function(req, res) {
       locationParam: location,
       mediaUrlParam: mediaUrl,
       descriptionParam: description,
-      categoryParam: category,
       createdAtParam: createdAt,
       userIDParam: userID,
+      categoryParam: category,
+      privacyParam: privacy,
       likesParam: likes
     })
     .then(result => {
@@ -605,17 +609,16 @@ app.delete('/api/users/:userID/pins/:pinID', function(req, res) {
     });
 });
 
-// Updates a pin description
+// // Increments a Pin's LIKES
 // app.put('/api/users/:userID/pins/:pinID', function(req, res) {
 //   let pinID = req.params.pinID;
-//   let newDesc = req.body.description;
 
 //   session
 //     .run('MATCH (a {id: {pinID} })\
-//       SET a.description = {newDesc}\
-//       RETURN a'                        
+//       RETURN a.likes',                        
 //     )
 //     .then(result => {
+//       // NEEDS TO TAKE LIKES RESULT, INCREMENT, THEN SET LIKES TO NEW LIKE
 //       res.status(200).send(result);
 //       session.close();
 //     })
@@ -625,7 +628,7 @@ app.delete('/api/users/:userID/pins/:pinID', function(req, res) {
 // });
 
 app.post('/upload', upload.single('file'), (req, res, next) => {
-  res.json(req.file)
+  res.json(req.file);
 });
 
 app.post('/postpin', (req, res, next) => {
