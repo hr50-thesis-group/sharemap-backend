@@ -126,19 +126,32 @@ app.post('/api/users/:userID/friendships', function(req, res) {
   var friendshipReceiver = req.params.userID.toString();
   var friendshipGiver = req.body.id.toString();
 
-  session.run(
-    'MATCH (u:User {id:{friendshipGiverParam}}), (r:User {id:{friendshipReceiverParam}}) CREATE (u)-[:FRIENDED]->(r)', {
-      friendshipGiverParam: friendshipGiver,
-      friendshipReceiverParam: friendshipReceiver
-    }) 
-    .then(result => {
-      res.status(201).send();
+  session.run('MATCH (n:User {id: {friendshipGiverParam}})-[r:FRIENDED]->(m:User {id: {friendshipReceiverParam}}) RETURN SIGN(COUNT(r))', {
+        friendshipGiverParam: friendshipGiver,
+        friendshipReceiverParam: friendshipReceiver
+      })
+  .then(result => {
+    if (result === 0) {
+      session.run(
+      'MATCH (u:User {id:{friendshipGiverParam}}), (r:User {id:{friendshipReceiverParam}}) CREATE (u)-[:FRIENDED]->(r)', {
+        friendshipGiverParam: friendshipGiver,
+        friendshipReceiverParam: friendshipReceiver
+      }) 
+      .then(result => {
+        console.log('friendship created');
+        res.status(201).send('friendship created!');
+        session.close();
+      })
+      .catch(error => {
+        console.log(error);
+        session.close();
+      });
+    } else {
       session.close();
-    })
-    .catch(error => {
-      console.log(error);
-      session.close();
-    });
+      console.log('the current already friended the other user');
+      res.status(400).send('the current already friended the other user');
+    }
+  })
 });
 
 // Creates a new User
