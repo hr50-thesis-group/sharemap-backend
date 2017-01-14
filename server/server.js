@@ -493,7 +493,7 @@ app.delete('/api/users/:userID', function(req, res) {
  *             *
  * * * * * * * */
 
-// GET all friends pins
+// GET all PRIVATE Pins
 app.get('/api/users/:userID/pins/private', function(req, res) {
   let userID = req.params.userID;
 
@@ -513,10 +513,7 @@ app.get('/api/users/:userID/pins/private', function(req, res) {
     });
 });
 
-// UNION MATCH (a)\
-//       WHERE (a)<-[:PINNED]-(n)-[:FRIENDED]->(n: User { userID:{userIDParam} })\
-//       RETURN a
-// GETS all public pins
+// Gets all PUBLIC Pins
 app.get('/api/users/:userID/pins/public', function(req, res) {
   let userID = req.params.userID;
 
