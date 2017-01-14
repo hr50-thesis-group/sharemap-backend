@@ -309,7 +309,7 @@ app.post('/api/users/:userID/pins', function(req, res) {
   let category = req.body.category;
 
   session
-    .run('MATCH (n:User {id: {userIDParam}})<-[r:FRIENDED]-(p:User) \
+    .run('MATCH (n:User {id: {userIDParam}})\
         CREATE (a:Pin {\
         id: {pinIDParam},\
         location: {locationParam},\
@@ -319,7 +319,7 @@ app.post('/api/users/:userID/pins', function(req, res) {
         category: {categoryParam},\
         userID: {userIDParam}\
       }) MERGE (a)<-[:PINNED]-(n)\
-         RETURN p', 
+         RETURN a.description', 
     { //:User {id: {userIDParam}}
       pinIDParam: uniquePinID,
       locationParam: location,
@@ -330,10 +330,14 @@ app.post('/api/users/:userID/pins', function(req, res) {
       userIDParam: userID
     })
     .then(result => {
-      console.log('Friends of user who just posted pin: ', result);
-      // !! PASS RESULT TO PIN MODEL HERE !!
-      res.status(201).send(result);
-      session.close();
+      session
+      .run(`MATCH (n:User {id:'${userID}'})<-[r:FRIENDED]-(p:User) RETURN p`)
+      .then(friends => {
+        console.log('Successfully posted pin: ', result);
+        console.log('Friends of user who just posted pin: ', friends);
+        res.status(201).send(friends);
+        session.close();
+      })
     })
     .catch(err => {
       session.close();
