@@ -49,14 +49,14 @@ app.listen(1337, function() {
 
 app.use(jsonParser);
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(expressJWT({ secret: 'sharemap-secret' })  
+app.use(expressJWT({ secret: process.env.JWT_SECRET })  
   .unless({
     path: [
       '/api/login',
       '/api/signup',
       '/api/users',
     ],
-  }));
+}));
 
 app.get('/', function(req, res) {
   res.send('hi');
@@ -88,7 +88,7 @@ app.post('/api/signup', (req, res, next) => {
           console.error('An error while hashing user\'s password');
           throw err;
         }
-        let userToken = jwt.sign({ email }, 'sharemap-secret', {
+        let userToken = jwt.sign({ email }, process.env.JWT_SECRET , {
           expiresIn: "24h"
         });
         let uniqueID = uuidV1();
@@ -145,20 +145,9 @@ app.post('/api/login', (req, res, next) => {
           throw err;
         }
         if (samePassword) {
-          let token = jwt.sign({ email }, 'sharemap-secret', {
+          let token = jwt.sign({ email }, process.env.JWT_SECRET, {
             expiresIn: "24h"
           });
-
-
-          // store token in user's table
-          /****************************/
-          /****************************/
-          /****************************/
-          /****************************/
-          /****************************/
-          /****************************/
-          
-          
           let user = {
             userId: id,
             firstName,
@@ -166,7 +155,25 @@ app.post('/api/login', (req, res, next) => {
             email,
             authToken: token,
           };
-          res.status(201).send({ user });
+          let data = {
+            userId: id,
+            token,
+          };
+          request({
+            uri: `http://localhost:1337/api/users/${id}`,
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify(data),
+          }, (error, response, body) => {
+            if (error) {
+              console.error('POST: /api/login : An error occurred creating a put request');
+              throw error;
+            }
+            res.status(201).send({ user });
+          });
         } else {
           res.status(400).send({ error: 'Invalid password.' });
         }
@@ -325,7 +332,7 @@ app.post('/api/users', function(req, res) {
       console.log(err);
     } else {
       if (!JSON.parse(body)[0] || JSON.parse(body)[0].id !== uniqueID) {
-        let userToken = jwt.sign({ email }, 'sharemap-secret', {
+        let userToken = jwt.sign({ email }, process.env.JWT_SECRET, {
           expiresIn: "24h"
         });
         session
@@ -371,11 +378,11 @@ app.put('/api/users/:userID/', function(req, res) {
         userIDParam: userID
       })
     .then(result => {
-      console.log('updated result...', result);
       res.status(200).send(result);
       session.close();
     })
     .catch(err => {
+      console.error('PUT: /api/users/:userID: **ERROR**');
       console.log(err);
     });
 });
