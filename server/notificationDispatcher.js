@@ -17,7 +17,8 @@ var sdk = require('exponent-server-sdk');
 
 module.exports = {
   sendPushNotification: (data) => {
-    var userFirstName = data.records[0]._fields[1].slice(0, 1).toUpperCase() + userFirstName.slice(1);
+    var userFirstName = data.records[0]._fields[1];
+    userFirstName = userFirstName.slice(0, 1).toUpperCase() + userFirstName.slice(1);
 
     data.records.forEach(record => {
       var token = record._fields[0];
