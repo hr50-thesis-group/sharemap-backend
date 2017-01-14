@@ -79,6 +79,7 @@ app.post('/api/signup', (req, res, next) => {
     {emailParam: email}
   )
   .then(result => {
+    console.log('is this thing on...?');
     if (result.records.length) {
       session.close();
       let error = 'Email has already been used. Please try again!';
@@ -119,6 +120,7 @@ app.post('/api/signup', (req, res, next) => {
     }
   })
   .catch(error => {
+    console.log(error);
     console.log('POST /api/signup: An error occurred querying an user');
     throw error;
   });
