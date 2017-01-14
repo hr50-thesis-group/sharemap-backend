@@ -10,6 +10,9 @@ var dispatcher = require('./notificationDispatcher.js');
 const aws = require('aws-sdk');
 const multer = require('multer');
 const multerS3 = require('multer-s3');
+var bcrypt = require('bcrypt-nodejs');
+var expressJWT = require('express-jwt');
+var jwt = require('jsonwebtoken');
 
 // .env access
 require('dotenv').config();
@@ -46,11 +49,18 @@ app.listen(1337, function() {
 
 app.use(jsonParser);
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use(expressJWT({ secret: process.env.JWT_SECRET })  
+  .unless({
+    path: [
+      '/api/login',
+      '/api/signup',
+      '/api/users',
+    ],
+}));
 
 app.get('/', function(req, res) {
   res.send('hi');
 });
-
 
 /* * * * * * * *
  *             *
@@ -58,6 +68,174 @@ app.get('/', function(req, res) {
  *             *
  * * * * * * * */
 
+app.post('/api/signup', (req, res, next) => {
+  let { email, password, firstName, lastName } = req.body;
+  firstName = firstName || '';
+  lastName = lastName || '';
+  session.run (
+    'MATCH (n:User)\
+    WHERE n.email = {emailParam}\
+    RETURN n',
+    {emailParam: email}
+  )
+  .then(result => {
+    if (result.records.length) {
+      session.close();
+      let error = 'Email has already been used. Please try again!';
+      res.status(400).send({ error });
+    } else {
+      const saltRounds = 10;
+      bcrypt.hash(password, null, null, (err, hash) => {
+        if (err) {
+          console.error('An error while hashing user\'s password');
+          throw err;
+        }
+        let uniqueID = uuidV1();
+        session
+          .run('CREATE (n:User {\
+            firstName : {firstNameParam},\
+            lastName:{lastNameParam},\
+            email:{emailParam},\
+            id:{idParam},\
+            password:{passwordParam}\
+          }) RETURN n.firstName', {
+            firstNameParam: firstName.toLowerCase(), 
+            lastNameParam: lastName.toLowerCase(), 
+            emailParam: email,  
+            idParam: uniqueID,
+            passwordParam: hash,
+          })
+          .then(result => {
+            session.close();
+            res.status(201).send({ success: 'Account was created, log in!' });
+          })
+          .catch(err => {
+            session.close();
+            console.log('POST /api/signup: An error occurred while creating a new user');
+            console.log(err);
+            throw err;
+          });
+      });
+    }
+  })
+  .catch(error => {
+    console.log('POST /api/signup: An error occurred querying an user');
+    throw error;
+  });
+});
+
+// Creates a new User
+app.post('/api/users', function(req, res) {
+
+  if (req.body.fbID) { // facebook login
+    let { firstName, lastName, email, photoUrl, fbID } = req.body;
+    let uniqueID = fbID;
+    profileUrl = photoUrl;
+    email = email || 'Facebook User';
+            
+    let userToken = jwt.sign({ email }, process.env.JWT_SECRET, {
+      expiresIn: "24h"
+    });
+    let user = {
+      userId: uniqueID,
+      firstName,
+      lastName,
+      email,
+      profileUrl,
+      authToken: userToken,
+    };
+    session.run(
+      'MATCH (n:User)\
+      WHERE n.id = {idParam}\
+      RETURN n',
+      {idParam: uniqueID}
+    )
+    .then(result => {
+      session.close();
+      if (result.records.length) {
+        // user already exists
+        res.status(201).send({user});
+      } else {
+        // create a new user
+        session
+          .run('CREATE (n:User {          \
+            firstName : {firstNameParam}, \
+            lastName:{lastNameParam},     \
+            email:{emailParam},           \
+            photo:{photoParam},           \
+            id:{idParam}                  \
+          }) RETURN n.firstName', {
+            firstNameParam: firstName.toLowerCase(), 
+            lastNameParam: lastName.toLowerCase(), 
+            emailParam:email, 
+            photoParam:profileUrl, 
+            idParam:uniqueID
+          })
+          .then(result => {
+            res.status(201).send({user});
+            session.close();
+          })
+          .catch(err => {
+            session.close();
+            console.log("POST: /api/users: Creating new user: *** ERROR ***");
+            console.log(err);
+          });
+      }
+    })
+    .catch(error => {
+      console.log("POST: /api/users: Matching user: *** ERROR ***");
+    });
+    
+  } else { // vanilla login
+    let { email, password } = req.body;
+    let vanillaPassword = password;
+    session.run(
+      'MATCH (n:User)\
+      WHERE n.email = {emailParam}\
+      RETURN n',
+      {emailParam: email}
+    )
+    .then(result => {
+      session.close();
+      if (result.records.length) { 
+        let { id, firstName, lastName, email, password } = result.records[0]._fields[0].properties;
+        firstName = firstName || '';
+        lastName = lastName || '';
+        let hashedPassword = password;
+        bcrypt.compare(vanillaPassword, hashedPassword, (err, samePassword) => {
+          if (err) {
+            console.log('server.js: POST: /api/login: bcrypt.compare');
+            throw err;
+          }
+          if (samePassword) {
+            let token = jwt.sign({ email }, process.env.JWT_SECRET, {
+              expiresIn: "24h"
+            });
+            let user = {
+              userId: id,
+              firstName,
+              lastName,
+              email,
+              authToken: token,
+            };
+            res.status(201).send({ user });
+          } else {
+            res.status(400).send({ error: 'Invalid password.' });
+          }
+        });
+      } else {
+        console.log('USER NOT FOUND', result);
+        res.status(400).send({error: 'User was not found with email:  ' + email});
+      }
+    })
+    .catch(error => {
+      session.close();
+      console.log('POST /api/login: An error occurred querying user with email', email);
+      throw error;
+    });
+  }
+
+});
 
 // Responds with JSON of all users
 app.get('/api/users', function(req, res) {
@@ -200,6 +378,9 @@ app.post('/api/users', function(req, res) {
       console.log(err);
     } else {
       if (!JSON.parse(body)[0] || JSON.parse(body)[0].id !== uniqueID) {
+        let userToken = jwt.sign({ email }, process.env.JWT_SECRET, {
+          expiresIn: "24h"
+        });
         session
           .run('CREATE (n:User {          \
             firstName : {firstNameParam}, \
@@ -215,8 +396,6 @@ app.post('/api/users', function(req, res) {
             idParam:uniqueID
           })
           .then(result => {
-            console.log('successfully posted: ', result);
-            // PARSE THIS RESULT PROPERLY BEFORE SENDING
             res.status(201).send(result);
             session.close();
           })
@@ -245,12 +424,47 @@ app.put('/api/users/:userID/', function(req, res) {
         userIDParam: userID
       })
     .then(result => {
-      console.log('updated result...', result);
       res.status(200).send(result);
       session.close();
     })
     .catch(err => {
+      console.error('PUT: /api/users/:userID: **ERROR**');
       console.log(err);
+    });
+});
+
+// Responds with JSON of all users
+app.get('/api/users', function(req, res) {
+  // query DB for all users, send all user models
+  session.run('MATCH(n:User) RETURN n').then(result => {
+    res.send(result.records.map(record => {
+      return record._fields[0].properties;
+    }));
+    session.close();
+  })
+  .catch(err => {
+    console.log('*** ERROR ***');
+    console.log(err);
+  });
+});
+
+// Responds with JSON of user model
+app.get('/api/users/:userID', function(req, res) {
+  var userID = req.params.userID;
+  session.run (
+      'MATCH (u:User)\
+      WHERE u.id = {userID}\
+      RETURN u',
+      {userID: userID}
+    ) //('MATCH (n {id: {userID}}) DETACH DELETE n')
+    .then(result => {
+      res.status(200).send(result.records.map(record => {
+        return record._fields[0].properties;
+      }));
+      session.close();
+    })
+    .catch(error => {
+      console.log(error);
     });
 });
 
