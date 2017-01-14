@@ -331,7 +331,7 @@ app.post('/api/users/:userID/pins', function(req, res) {
     })
     .then(result => {
       session
-      .run(`MATCH (n:User {id:'${userID}'})<-[r:FRIENDED]-(p:User) RETURN p`)
+      .run(`MATCH (n:User {id:'${userID}'})<-[r:FRIENDED]-(p:User) RETURN p.token, n.firstName`)
       .then(friends => {
         console.log('Successfully posted pin: ', result);
         console.log('Friends of user who just posted pin: ', friends);
