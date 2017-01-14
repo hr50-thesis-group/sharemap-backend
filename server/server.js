@@ -6,7 +6,6 @@ var helpers = require('./helpers.js');
 var request = require('request');
 var bodyParser = require('body-parser');
 var jsonParser = bodyParser.json();
-var dispatcher = require('./notificationDispatcher.js');
 const aws = require('aws-sdk');
 const multer = require('multer');
 const multerS3 = require('multer-s3');
@@ -263,8 +262,7 @@ app.get('/api/users', function(req, res) {
           session.close();
         })
       .catch(err => {
-        console.log('*** ERROR ***');
-        console.log(err);
+        console.log('ERROR', err);
       });
     }
   } else {
@@ -272,11 +270,10 @@ app.get('/api/users', function(req, res) {
       res.send(result.records.map(record => {
         return record._fields[0].properties;
       }));
-    session.close();
+      session.close();
     })
     .catch(err => {
-      console.log('*** ERROR ***');
-      console.log(err);
+      console.log('ERROR', err);
     });
   }
 });
@@ -297,9 +294,9 @@ app.get('/api/users/:userID', function(req, res) {
       }));
       session.close();
     })
-    .catch(error => {
-      console.log('***ERROR***');
-      console.log(error);
+
+    .catch(err => {
+      console.log('ERROR', err);
       session.close();
     });
 });
@@ -340,12 +337,12 @@ app.post('/api/users/:userID/friendships', function(req, res) {
         friendshipReceiverParam: friendshipReceiver
       }) 
       .then(result => {
-        console.log('friendship created');
-        res.status(201).send('friendship created!');
+        console.log('Friendship created');
+        res.status(201).send('Friendship created');
         session.close();
       })
-      .catch(error => {
-        console.log(error);
+      .catch(err => {
+        console.log('ERROR', err);
         session.close();
       });
     } else {
@@ -353,7 +350,7 @@ app.post('/api/users/:userID/friendships', function(req, res) {
       console.log('the current already friended the other user');
       res.status(400).send('the current already friended the other user');
     }
-  })
+  });
 });
 
 // Creates a new User
@@ -373,10 +370,10 @@ app.post('/api/users', function(req, res) {
 
   request({
     uri: `http://localhost:1337/api/users/${uniqueID}`,
-    method: "GET",
+    method: 'GET',
   }, (err, response, body) => {
     if (err) {
-      console.log("*** ERROR ***");
+      console.log('*** ERROR ***');
       console.log(err);
     } else {
       if (!JSON.parse(body)[0] || JSON.parse(body)[0].id !== uniqueID) {
@@ -393,9 +390,9 @@ app.post('/api/users', function(req, res) {
           }) RETURN n.firstName', {
             firstNameParam: firstName.toLowerCase(), 
             lastNameParam: lastName.toLowerCase(), 
-            emailParam:email, 
-            photoParam:photoUrl, 
-            idParam:uniqueID
+            emailParam: email, 
+            photoParam: photoUrl, 
+            idParam: uniqueID
           })
           .then(result => {
             res.status(201).send(result);
@@ -403,8 +400,8 @@ app.post('/api/users', function(req, res) {
           })
           .catch(err => {
             session.close();
-            console.log("*** ERROR ***");
-            console.log(err);
+            console.log('*** ERROR ***');
+            console.log('ERROR', err);
           });
       } else {
         res.status(400).send('User already exists');
@@ -432,6 +429,7 @@ app.put('/api/users/:userID/', function(req, res) {
     .catch(err => {
       console.error('PUT: /api/users/:userID: **ERROR**');
       console.log(err);
+
     });
 });
 
@@ -487,7 +485,7 @@ app.delete('/api/users/:userID', function(req, res) {
       session.close();
     })
     .catch(err => {
-      console.log(err);
+      console.log('ERROR', err);
     });
 });
 
@@ -497,34 +495,79 @@ app.delete('/api/users/:userID', function(req, res) {
  *             *
  * * * * * * * */
 
-// Returns with JSOn of all a user's pins
+// GET all PRIVATE Pins
+app.get('/api/users/:userID/pins/private', function(req, res) {
+  let userID = req.params.userID;
+
+  session
+    .run('MATCH (m)<-[:FRIENDED]-(n: User {id:{userIDParam} })\
+          MATCH (a)<-[:PINNED]-(m)\
+          RETURN a',
+    { userIDParam: userID })
+    .then(result => {
+      res.status(200).send({result});
+      session.close();
+    })
+    .catch(err => {
+      res.status(404);
+      console.log('ERROR', err);
+      session.close();
+    });
+});
+
+// Gets all PUBLIC Pins
+app.get('/api/users/:userID/pins/public', function(req, res) {
+  let userID = req.params.userID;
+
+  session
+    .run('MATCH (a: Pin {privacy:{publicParam} })\
+      RETURN a\
+      UNION MATCH (m)<-[:FRIENDED]-(n: User {id:{userIDParam} })\
+      MATCH (a)<-[:PINNED]-(m)\
+      RETURN a',
+    { 
+      userIDParam: userID,
+      publicParam: 'public'
+    })    
+    .then(result => {
+      res.status(200).send({result});
+      session.close();
+    })
+    .catch(err => {
+      res.status(404);
+      console.log('ERROR', err);
+      session.close();
+    });
+});
+
+// Returns with JSON of all a user's pins
 app.get('/api/users/:userID/pins', function(req, res) {
-  var userID = req.params.userID;
+  let userID = req.params.userID;
 
   session
     .run('MATCH (n:User {id:{userIDParam}})\
-          MATCH (pin)<-[:PINNED]-(n)  \
-          RETURN pin', {userIDParam: userID})
+          MATCH (pin)<-[:PINNED]-(n)\
+          RETURN pin', 
+    { userIDParam: userID })
     .then(result => {
       res.status(200).send(result);
-      session.close;
+      session.close();
     })
     .catch(err => {
 
-      console.log(err);
+      console.log('ERROR', err);
     });
 });
 
 // Responds with a single pin
 app.get('/api/users/:userID/pins/:pinID', function(req, res) {
-  var pinID = req.params.pinID;
+  let pinID = req.params.pinID;
 
   session
     .run('MATCH (a:Pin)\
           WHERE a.id = {pinIDParam}\
-          RETURN a', {
-            pinIDParam: pinID
-          })
+          RETURN a', 
+    { pinIDParam: pinID })
     .then(result => {
       res.status(200).send(result.records.map(record => {
         return record._fields[0].properties;
@@ -533,7 +576,7 @@ app.get('/api/users/:userID/pins/:pinID', function(req, res) {
 
     })
     .catch(err => {
-      console.log(err);
+      console.log('ERROR', err);
     });
 }); 
 
@@ -545,6 +588,8 @@ app.post('/api/users/:userID/pins', function(req, res) {
   let createdAt = JSON.stringify(new Date());
   let userID = req.params.userID;
   let category = req.body.category;
+  let privacy = req.body.privacy;
+  let likes = 0;
 
   session
     .run('MATCH (n:User {id: {userIDParam}})\
@@ -554,8 +599,10 @@ app.post('/api/users/:userID/pins', function(req, res) {
         mediaUrl: {mediaUrlParam},\
         description: {descriptionParam},\
         createdAt: {createdAtParam},\
+        userID: {userIDParam},\
         category: {categoryParam},\
-        userID: {userIDParam}\
+        privacy: {privacyParam},\
+        likes: {likesParam}\
       }) MERGE (a)<-[:PINNED]-(n)\
          RETURN a.description', 
     { //:User {id: {userIDParam}}
@@ -563,9 +610,11 @@ app.post('/api/users/:userID/pins', function(req, res) {
       locationParam: location,
       mediaUrlParam: mediaUrl,
       descriptionParam: description,
-      categoryParam: category,
       createdAtParam: createdAt,
-      userIDParam: userID
+      userIDParam: userID,
+      categoryParam: category,
+      privacyParam: privacy,
+      likesParam: likes 
     })
     .then(result => {
       session
@@ -578,9 +627,8 @@ app.post('/api/users/:userID/pins', function(req, res) {
       })
     })
     .catch(err => {
+      console.log('ERROR', err);
       session.close();
-      console.log('*** ERROR ***');
-      console.log(err);
     });
 });
 
@@ -599,36 +647,34 @@ app.delete('/api/users/:userID/pins/:pinID', function(req, res) {
       session.close();
     })
     .catch(err => {
-      console.log(err);
+      console.log('ERROR', err);
     });
 });
 
-// Updates a pin description
-// app.put('/api/users/:userID/pins/:pinID', function(req, res) {
-//   let pinID = req.params.pinID;
-//   let newDesc = req.body.description;
 
-//   session
-//     .run('MATCH (a {id: {pinID} })\
-//       SET a.description = {newDesc}\
-//       RETURN a'                        
-//     )
-//     .then(result => {
-//       res.status(200).send(result);
-//       session.close();
-//     })
-//     .catch(err => {
-//       console.log(err);
-//     });
-// });
+// Updates a pin description
+app.put('/api/users/:userID/pins/:pinID', function(req, res) {
+  let pinID = req.params.pinID;
+  let newDesc = req.body.param.description;
+
+  session
+    .run('MATCH (a {id: {pinID} })\
+      SET a.description = {newDesc}\
+      RETURN a'                        
+    )
+    .then(result => {
+      res.status(200).send(result);
+      session.close();
+    })
+    .catch(err => {
+      console.log('ERROR', err);
+    });
+});
+
 
 app.post('/upload', upload.single('file'), (req, res, next) => {
-  res.json(req.file)
+  res.json(req.file);
 });
-
-app.post('/postpin', (req, res, next) => {
-  console.log('/postpin post request received');
-  res.send('hi');
-});
+ 
 
 exports.app = app;
