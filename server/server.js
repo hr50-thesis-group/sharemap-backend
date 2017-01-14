@@ -118,11 +118,32 @@ app.get('/api/users/:userID', function(req, res) {
       session.close();
     })
     .catch(error => {
+      console.log('***ERROR***');
       console.log(error);
       session.close();
     });
 });
 
+
+// get a list of a user's friends
+app.get('/api/users/:userID/friendships', function(req, res) {
+  let userID = req.params.userID.toString();
+
+  session.run(`MATCH (n:User {id:'${userID}'})<-[r:FRIENDED]-(p:User) RETURN p`)
+  .then(result => {
+    res.status(200).send(result.records.map(record => {
+      return record._fields[0].properties;
+    }));
+    session.close();
+  })
+  .catch(error => {
+    console.log('***ERROR***');
+    console.log(error);
+    session.close();
+  });
+});
+
+// create a new friendship for a given user
 app.post('/api/users/:userID/friendships', function(req, res) {
   var friendshipReceiver = req.params.userID.toString();
   var friendshipGiver = req.body.id.toString();
