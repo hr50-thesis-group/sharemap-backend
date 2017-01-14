@@ -129,7 +129,7 @@ app.get('/api/users/:userID', function(req, res) {
 app.get('/api/users/:userID/friendships', function(req, res) {
   let userID = req.params.userID.toString();
 
-  session.run(`MATCH (n:User {id:'${userID}'})<-[r:FRIENDED]-(p:User) RETURN p`)
+  session.run(`MATCH (n:User {id:'${userID}'})-[r:FRIENDED]->(p:User) RETURN p`)
   .then(result => {
     res.status(200).send(result.records.map(record => {
       return record._fields[0].properties;
