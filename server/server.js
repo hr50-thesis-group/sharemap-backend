@@ -6,7 +6,6 @@ var helpers = require('./helpers.js');
 var request = require('request');
 var bodyParser = require('body-parser');
 var jsonParser = bodyParser.json();
-var dispatcher = require('./notificationDispatcher.js');
 const aws = require('aws-sdk');
 const multer = require('multer');
 const multerS3 = require('multer-s3');
@@ -338,8 +337,8 @@ app.post('/api/users/:userID/friendships', function(req, res) {
         friendshipReceiverParam: friendshipReceiver
       }) 
       .then(result => {
-        console.log('friendship created');
-        res.status(201).send('friendship created!');
+        console.log('Friendship created');
+        res.status(201).send('Friendship created');
         session.close();
       })
       .catch(error => {
@@ -351,7 +350,7 @@ app.post('/api/users/:userID/friendships', function(req, res) {
       console.log('the current already friended the other user');
       res.status(400).send('the current already friended the other user');
     }
-  })
+  });
 });
 
 // Creates a new User
@@ -391,9 +390,9 @@ app.post('/api/users', function(req, res) {
           }) RETURN n.firstName', {
             firstNameParam: firstName.toLowerCase(), 
             lastNameParam: lastName.toLowerCase(), 
-            emailParam:email, 
-            photoParam:photoUrl, 
-            idParam:uniqueID
+            emailParam: email, 
+            photoParam: photoUrl, 
+            idParam: uniqueID
           })
           .then(result => {
             res.status(201).send(result);
@@ -500,11 +499,12 @@ app.get('/api/users/:userID/pins/private', function(req, res) {
   let userID = req.params.userID;
 
   session
-    .run('MATCH (a)<-[:PINNED]-(n)-[:FRIENDED]->(n:User { userID: {userIDParam} })\
+    .run('MATCH (m)<-[:FRIENDED]-(n: User {id:{userIDParam} })\
+          MATCH (a)<-[:PINNED]-(m)\
           RETURN a',
     { userIDParam: userID })
     .then(result => {
-      res.status(200).send(result);
+      res.status(200).send( result);
       session.close();
     })
     .catch(err => {
@@ -514,20 +514,23 @@ app.get('/api/users/:userID/pins/private', function(req, res) {
     });
 });
 
+// UNION MATCH (a)\
+//       WHERE (a)<-[:PINNED]-(n)-[:FRIENDED]->(n: User { userID:{userIDParam} })\
+//       RETURN a
 // GETS all public pins
 app.get('/api/users/:userID/pins/public', function(req, res) {
   let userID = req.params.userID;
 
   session
-    .run('MATCH {a: Pin {privacy:publicParam} })\
+    .run('MATCH (a: Pin {privacy:{publicParam} })\
       RETURN a\
-      UNION MATCH (a)\
-      WHERE (a)<-[:PINNED]-(n)-[:FRIENDED]->(n: User { userID: {userIDParam} })\
+      UNION MATCH (m)<-[:FRIENDED]-(n: User {id:{userIDParam} })\
+      MATCH (a)<-[:PINNED]-(m)\
       RETURN a',
     { 
       userIDParam: userID,
       publicParam: 'public'
-    })
+    })    
     .then(result => {
       res.status(200).send(result);
       session.close();
@@ -674,6 +677,7 @@ app.put('/api/users/:userID/pins/:pinID', function(req, res) {
 
 app.post('/upload', upload.single('file'), (req, res, next) => {
   res.json(req.file);
+});
  
 
 exports.app = app;
