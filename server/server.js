@@ -495,17 +495,60 @@ app.delete('/api/users/:userID', function(req, res) {
  *             *
  * * * * * * * */
 
+// GET all friends pins
+app.get('/api/users/:userID/pins/private', function(req, res) {
+  let userID = req.params.userID;
+
+  session
+    .run('MATCH (n)<-[:FRIENDED]-(n:User { userID: {userIDParam} })\
+          MATCH (a)<-[:PINNED]-(n)\
+          RETURN a',
+    { userIDParam: userID })
+    .then(result => {
+      res.status(200).send(result);
+      session.close();
+    })
+    .catch(err => {
+      res.status(404);
+      console.log(err);
+      session.close();
+    });
+});
+
+// GETS all public & friend pins
+app.get('/api/users/:userID/pins/public', function(req, res) {
+  let userID = req.params.userID;
+
+  session
+    .run('MATCH (a:Pin { privacy:public })\
+      MATCH (a:Pin { userID:{userIDParam} })\
+      RETURN a',
+    { 
+      userIDParam: userID 
+    })
+    .then(result => {
+      res.status(200).send(result);
+      session.close();
+    })
+    .catch(err => {
+      res.status(404);
+      console.log(err);
+      session.close();
+    });
+});
+
 // Returns with JSON of all a user's pins
 app.get('/api/users/:userID/pins', function(req, res) {
-  var userID = req.params.userID;
+  let userID = req.params.userID;
 
   session
     .run('MATCH (n:User {id:{userIDParam}})\
           MATCH (pin)<-[:PINNED]-(n)  \
-          RETURN pin', {userIDParam: userID})
+          RETURN pin', 
+    { userIDParam: userID })
     .then(result => {
       res.status(200).send(result);
-      session.close;
+      session.close();
     })
     .catch(err => {
 
@@ -515,14 +558,13 @@ app.get('/api/users/:userID/pins', function(req, res) {
 
 // Responds with a single pin
 app.get('/api/users/:userID/pins/:pinID', function(req, res) {
-  var pinID = req.params.pinID;
+  let pinID = req.params.pinID;
 
   session
     .run('MATCH (a:Pin)\
           WHERE a.id = {pinIDParam}\
-          RETURN a', {
-            pinIDParam: pinID
-          })
+          RETURN a', 
+    { pinIDParam: pinID })
     .then(result => {
       res.status(200).send(result.records.map(record => {
         return record._fields[0].properties;
@@ -569,7 +611,7 @@ app.post('/api/users/:userID/pins', function(req, res) {
       userIDParam: userID,
       categoryParam: category,
       privacyParam: privacy,
-      likesParam: likes
+      likesParam: likes 
     })
     .then(result => {
       session

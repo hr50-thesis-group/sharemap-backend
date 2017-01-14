@@ -30,7 +30,8 @@
     "longitude": -118 
   },
   "mediaUrl": "https://s-media-cache-ak0.pinimg.com/originals/35/06/d9/3506d97e8e5d22727ea46bc50c5cd300.jpg",
-  "description": "<3_<3"
+  "description": "<3_<3",
+  "privacy": "private"
 }
 
 
@@ -40,7 +41,8 @@
     "longitude": -132
   },
   "mediaUrl": "https://4.bp.blogspot.com/-ES1Ao21PUMI/V-BRs66USAI/AAAAAAAAUn4/2kQ3CPS8zoEms2iQDgDM3Gn7qa_KJ8SKgCEw/s1920/Jinx_1920x1080.jpg",
-  "description": "Star Guardian Jinx"
+  "description": "Star Guardian Jinx",
+  "privacy": "private"
 }
 
 
@@ -50,5 +52,6 @@
     "longitude": -135
   },
   "mediaUrl": "http://2static.fjcdn.com/pictures/Pool_3eab00_5961506.jpg",
-  "description": "Pool Party Fiora"
+  "description": "Pool Party Fiora",
+  "privacy": "public"
 }
