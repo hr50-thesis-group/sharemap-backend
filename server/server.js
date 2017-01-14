@@ -10,7 +10,7 @@ var dispatcher = require('./notificationDispatcher.js');
 const aws = require('aws-sdk');
 const multer = require('multer');
 const multerS3 = require('multer-s3');
-var bcrypt = require('bcrypt');
+var bcrypt = require('bcrypt-nodejs');
 var expressJWT = require('express-jwt');
 var jwt = require('jsonwebtoken');
 
@@ -58,11 +58,9 @@ app.use(expressJWT({ secret: 'sharemap-secret' })
     ],
   }));
 
-
 app.get('/', function(req, res) {
   res.send('hi');
 });
-
 
 /* * * * * * * *
  *             *
@@ -80,16 +78,12 @@ app.post('/api/signup', (req, res, next) => {
   )
   .then(result => {
     if (result.records.length) {
-      console.log('USER ALREADY EXISTS');
-      console.log('RESULT****', result);
       session.close();
-      res.status(400).send('User already exists');
+      let error = 'Email has already been used. Please try again!';
+      res.status(400).send({ error });
     } else {
-      console.log('USER WAS NOT FOUND');
-      console.log('CREATING NEW USER...');
-      console.log('RESULT****', result);
       const saltRounds = 10;
-      bcrypt.hash(password, saltRounds, (err, hash) => {
+      bcrypt.hash(password, null, null, (err, hash) => {
         if (err) {
           console.error('An error while hashing user\'s password');
           throw err;
@@ -98,26 +92,23 @@ app.post('/api/signup', (req, res, next) => {
           expiresIn: "24h"
         });
         let uniqueID = uuidV1();
-
-        console.log('GOT HERE THO***************');
         session
           .run('CREATE (n:User {\
             firstName : {firstNameParam},\
             lastName:{lastNameParam},\
             email:{emailParam},\
-            id:{idParam}\
-            token:{tokenParam}\
+            id:{idParam},\
+            password:{passwordParam}\
           }) RETURN n.firstName', {
             firstNameParam: firstName, 
             lastNameParam: lastName, 
-            emailParam: email, 
+            emailParam: email,  
             idParam: uniqueID,
-            tokenParam: userToken,
+            passwordParam: hash,
           })
           .then(result => {
             session.close();
-            console.log('successfully posted: ', result);
-            res.status(201).send(userToken);
+            res.status(201).send({ success: 'Account was created, log in!' });
           })
           .catch(err => {
             session.close();
@@ -125,7 +116,6 @@ app.post('/api/signup', (req, res, next) => {
             console.log(err);
             throw err;
           });
-        session.close();
       });
     }
   })
@@ -137,9 +127,8 @@ app.post('/api/signup', (req, res, next) => {
 
 app.post('/api/login', (req, res, next) => {
   let { email, password } = req.body;
-
-  // query database for user with email
-  session.run (
+  let vanillaPassword = password;
+  session.run(
     'MATCH (n:User)\
     WHERE n.email = {emailParam}\
     RETURN n',
@@ -147,27 +136,45 @@ app.post('/api/login', (req, res, next) => {
   )
   .then(result => {
     session.close();
-    if (result.records.length) {  // if user was found
-      console.log('USER FOUND', email);
+    if (result.records.length) { 
+      let { id, firstName, lastName, email, password } = result.records[0]._fields[0].properties;
+      let hashedPassword = password;
+      bcrypt.compare(vanillaPassword, hashedPassword, (err, samePassword) => {
+        if (err) {
+          console.log('server.js: POST: /api/login: bcrypt.compare');
+          throw err;
+        }
+        if (samePassword) {
+          let token = jwt.sign({ email }, 'sharemap-secret', {
+            expiresIn: "24h"
+          });
 
 
-      /********************************************/
-      /********************************************/
-      /********************************************/
-      // start working here: grab hashed password
-      // from query and compare to plain text password
-      /********************************************/
-      /********************************************/
-      /********************************************/
-      /********************************************/
-      // bcrypt.compare(myPlaintextPassword, hash)
-      //   .then(function(res) {
-      //     // res == true 
-      //   });
+          // store token in user's table
+          /****************************/
+          /****************************/
+          /****************************/
+          /****************************/
+          /****************************/
+          /****************************/
+          
+          
+          let user = {
+            userId: id,
+            firstName,
+            lastName,
+            email,
+            authToken: token,
+          };
+          res.status(201).send({ user });
+        } else {
+          res.status(400).send({ error: 'Invalid password.' });
+        }
+      });
 
     } else {  // if user was not found
-      console.log('USER NOT FOUND w/ email', email);
-      res.status(400).send('User was not found with email', email);
+      console.log('USER NOT FOUND', result);
+      res.status(400).send({error: 'User was not found with email:  ' + email});
     }
   })
   .catch(error => {
@@ -336,8 +343,6 @@ app.post('/api/users', function(req, res) {
             idParam:uniqueID
           })
           .then(result => {
-            console.log('successfully posted: ', result);
-            // PARSE THIS RESULT PROPERLY BEFORE SENDING
             res.status(201).send(result);
             session.close();
           })

@@ -19,6 +19,7 @@
   "dependencies": {
     "aws-sdk": "^2.7.21",
     "bcrypt": "^1.0.2",
+    "bcrypt-nodejs": "0.0.3",
     "body-parser": "^1.15.2",
     "dotenv": "^2.0.0",
     "exponent-server-sdk": "^1.0.5",
