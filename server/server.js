@@ -496,7 +496,51 @@ app.delete('/api/users/:userID', function(req, res) {
  *  PINS API   *
  *             *
  * * * * * * * */
+ 
+// GET all PRIVATE Pins
+app.get('/api/users/:userID/pins/private', function(req, res) {
+  let userID = req.params.userID;
 
+  session
+    .run('MATCH (m)<-[:FRIENDED]-(n: User {id:{userIDParam} })\
+          MATCH (a)<-[:PINNED]-(m)\
+          RETURN a',
+    { userIDParam: userID })
+    .then(result => {
+      res.status(200).send({result});
+      session.close();
+    })
+    .catch(err => {
+      res.status(404);
+      console.log('ERROR', err);
+      session.close();
+    });
+});
+
+// Gets all PUBLIC Pins
+app.get('/api/users/:userID/pins/public', function(req, res) {
+  let userID = req.params.userID;
+
+  session
+    .run('MATCH (a: Pin {privacy:{publicParam} })\
+      RETURN a\
+      UNION MATCH (m)<-[:FRIENDED]-(n: User {id:{userIDParam} })\
+      MATCH (a)<-[:PINNED]-(m)\
+      RETURN a',
+    { 
+      userIDParam: userID,
+      publicParam: 'public'
+    })    
+    .then(result => {
+      res.status(200).send({result});
+      session.close();
+    })
+    .catch(err => {
+      res.status(404);
+      console.log('ERROR', err);
+      session.close();
+    });
+});
 // Returns with JSON of all a user's pins
 app.get('/api/users/:userID/pins', function(req, res) {
   var userID = req.params.userID;
