@@ -165,8 +165,9 @@ app.post('/api/users', function(req, res) {
   if (req.body.fbID ) {
     uniqueID = req.body.fbID;
   } else {
-    let split = email.split('@');
-    uniqueID = split[0];
+    // let split = email.split('@');
+    // uniqueID = split[0];
+    uniqueID = uuidV1();
   }
 
   request({
@@ -332,10 +333,10 @@ app.post('/api/users/:userID/pins', function(req, res) {
     .then(result => {
       session
       .run(`MATCH (n:User {id:'${userID}'})<-[r:FRIENDED]-(p:User) RETURN p.token, n.firstName`)
-      .then(friends => {
-        console.log('Successfully posted pin: ', result);
-        console.log('Friends of user who just posted pin: ', friends);
-        res.status(201).send(friends);
+      .then(data => {
+        console.log('Successfully posted pin');
+        res.status(201).send(data);
+        dispatcher.sendPushNotification(data);
         session.close();
       })
     })
