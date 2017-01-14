@@ -155,31 +155,12 @@ app.post('/api/login', (req, res, next) => {
             email,
             authToken: token,
           };
-          let data = {
-            userId: id,
-            token,
-          };
-          request({
-            uri: `http://localhost:1337/api/users/${id}`,
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`
-            },
-            body: JSON.stringify(data),
-          }, (error, response, body) => {
-            if (error) {
-              console.error('POST: /api/login : An error occurred creating a put request');
-              throw error;
-            }
-            res.status(201).send({ user });
-          });
+          res.status(201).send({ user });
         } else {
           res.status(400).send({ error: 'Invalid password.' });
         }
       });
-
-    } else {  // if user was not found
+    } else {
       console.log('USER NOT FOUND', result);
       res.status(400).send({error: 'User was not found with email:  ' + email});
     }
