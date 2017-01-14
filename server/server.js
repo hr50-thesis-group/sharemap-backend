@@ -88,9 +88,6 @@ app.post('/api/signup', (req, res, next) => {
           console.error('An error while hashing user\'s password');
           throw err;
         }
-        let userToken = jwt.sign({ email }, process.env.JWT_SECRET , {
-          expiresIn: "24h"
-        });
         let uniqueID = uuidV1();
         session
           .run('CREATE (n:User {\
@@ -124,6 +121,77 @@ app.post('/api/signup', (req, res, next) => {
     throw error;
   });
 });
+
+// Creates a new User
+app.post('/api/users', function(req, res) {
+
+  let { firstName, lastName, email, photoUrl, fbID } = req.body;
+  let uniqueID = fbID;
+
+  // let firstName = req.body.firstName;
+  // let lastName = req.body.lastName;
+  // let email = req.body.email || 'No email';
+  // let photoUrl = req.body.photoUrl || 'No photo';
+  // var uniqueID;
+  // if (req.body.fbID ) {
+  //   uniqueID = req.body.fbID;
+  // } else {
+  //   let split = email.split('@');
+  //   uniqueID = split[0];
+  // }
+
+  let userToken = jwt.sign({ uniqueID }, process.env.JWT_SECRET, {
+    expiresIn: "24h"
+  });
+  request({
+    uri: `http://localhost:1337/api/users/${uniqueID}`,
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${userToken}`,
+    },
+  }, (err, response, body) => {
+    if (err) {
+      console.log("POST REQUESt TO: /api/users/:uniqueID : *** ERROR ***");
+      throw err;
+    } else {
+      if (!JSON.parse(body)[0] || JSON.parse(body)[0].id !== uniqueID) {
+        session
+          .run('CREATE (n:User {          \
+            firstName : {firstNameParam}, \
+            lastName:{lastNameParam},     \
+            email:{emailParam},           \
+            photo:{photoParam},           \
+            id:{idParam}                  \
+          }) RETURN n.firstName', {
+            firstNameParam: firstName.toLowerCase(), 
+            lastNameParam: lastName.toLowerCase(), 
+            emailParam:email, 
+            photoParam:photoUrl, 
+            idParam:uniqueID
+          })
+          .then(result => {
+          console.log('WOOOOOOOOOOOOOOOOOO');
+            res.status(201).send({
+              userId: uniqueID,
+              firstName,
+              lastName,
+              email,
+              authToken: userToken,
+            });
+            session.close();
+          })
+          .catch(err => {
+            session.close();
+            console.log("POST: /api/users: Creating new user : *** ERROR ***");
+            console.log(err);
+          });
+      } else {
+        res.status(400).send('User already exists');
+      }
+    }
+  });
+});
+
 
 app.post('/api/login', (req, res, next) => {
   let { email, password } = req.body;
