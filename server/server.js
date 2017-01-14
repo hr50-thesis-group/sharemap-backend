@@ -6,6 +6,7 @@ var helpers = require('./helpers.js');
 var request = require('request');
 var bodyParser = require('body-parser');
 var jsonParser = bodyParser.json();
+var dispatcher = require('./notificationDispatcher.js');
 const aws = require('aws-sdk');
 const multer = require('multer');
 const multerS3 = require('multer-s3');
@@ -131,7 +132,6 @@ app.post('/api/users/:userID/friendships', function(req, res) {
         friendshipReceiverParam: friendshipReceiver
       })
   .then(result => {
-    console.log('result', result);
     if (result.records.length === 0) {
       session.run(
       'MATCH (u:User {id:{friendshipGiverParam}}), (r:User {id:{friendshipReceiverParam}}) CREATE (u)-[:FRIENDED]->(r)', {
@@ -208,6 +208,28 @@ app.post('/api/users', function(req, res) {
       }
     }
   });
+});
+
+// Updates a specified user
+app.put('/api/users/:userID/', function(req, res) {
+  let userID = req.params.userID;
+  let token = req.body.token;
+
+  session
+    .run('MATCH (n:User {id: {userIDParam} })\
+      SET n.token = {tokenParam}\
+      RETURN n', {
+        tokenParam: token,
+        userIDParam: userID
+      })
+    .then(result => {
+      console.log('updated result...', result);
+      res.status(200).send(result);
+      session.close();
+    })
+    .catch(err => {
+      console.log(err);
+    });
 });
 
 // Deletes a specified user
@@ -340,23 +362,23 @@ app.delete('/api/users/:userID/pins/:pinID', function(req, res) {
 });
 
 // Updates a pin description
-app.put('/api/users/:userID/pins/:pinID', function(req, res) {
-  let pinID = req.params.pinID;
-  let newDesc = req.body.param.description;
+// app.put('/api/users/:userID/pins/:pinID', function(req, res) {
+//   let pinID = req.params.pinID;
+//   let newDesc = req.body.description;
 
-  session
-    .run('MATCH (a {id: {pinID} })\
-      SET a.description = {newDesc}\
-      RETURN a'                        
-    )
-    .then(result => {
-      res.status(200).send(result);
-      session.close();
-    })
-    .catch(err => {
-      console.log(err);
-    });
-});
+//   session
+//     .run('MATCH (a {id: {pinID} })\
+//       SET a.description = {newDesc}\
+//       RETURN a'                        
+//     )
+//     .then(result => {
+//       res.status(200).send(result);
+//       session.close();
+//     })
+//     .catch(err => {
+//       console.log(err);
+//     });
+// });
 
 app.post('/upload', upload.single('file'), (req, res, next) => {
   res.json(req.file)
