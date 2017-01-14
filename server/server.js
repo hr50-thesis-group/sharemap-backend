@@ -500,8 +500,7 @@ app.get('/api/users/:userID/pins/private', function(req, res) {
   let userID = req.params.userID;
 
   session
-    .run('MATCH (n)<-[:FRIENDED]-(n:User { userID: {userIDParam} })\
-          MATCH (a)<-[:PINNED]-(n)\
+    .run('MATCH (a)<-[:PINNED]-(n)-[:FRIENDED]->(n:User { userID: {userIDParam} })\
           RETURN a',
     { userIDParam: userID })
     .then(result => {
@@ -515,16 +514,19 @@ app.get('/api/users/:userID/pins/private', function(req, res) {
     });
 });
 
-// GETS all public & friend pins
+// GETS all public pins
 app.get('/api/users/:userID/pins/public', function(req, res) {
   let userID = req.params.userID;
 
   session
-    .run('MATCH (a:Pin { privacy:public })\
-      MATCH (a:Pin { userID:{userIDParam} })\
+    .run('MATCH {a: Pin {privacy:publicParam} })\
+      RETURN a\
+      UNION MATCH (a)\
+      WHERE (a)<-[:PINNED]-(n)-[:FRIENDED]->(n: User { userID: {userIDParam} })\
       RETURN a',
     { 
-      userIDParam: userID 
+      userIDParam: userID,
+      publicParam: 'public'
     })
     .then(result => {
       res.status(200).send(result);
@@ -543,7 +545,7 @@ app.get('/api/users/:userID/pins', function(req, res) {
 
   session
     .run('MATCH (n:User {id:{userIDParam}})\
-          MATCH (pin)<-[:PINNED]-(n)  \
+          MATCH (pin)<-[:PINNED]-(n)\
           RETURN pin', 
     { userIDParam: userID })
     .then(result => {
