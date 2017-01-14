@@ -70,6 +70,8 @@ app.get('/', function(req, res) {
 
 app.post('/api/signup', (req, res, next) => {
   let { email, password, firstName, lastName } = req.body;
+  firstName = firstName || '';
+  lastName = lastName || '';
   session.run (
     'MATCH (n:User)\
     WHERE n.email = {emailParam}\
@@ -97,8 +99,8 @@ app.post('/api/signup', (req, res, next) => {
             id:{idParam},\
             password:{passwordParam}\
           }) RETURN n.firstName', {
-            firstNameParam: firstName, 
-            lastNameParam: lastName, 
+            firstNameParam: firstName.toLowerCase(), 
+            lastNameParam: lastName.toLowerCase(), 
             emailParam: email,  
             idParam: uniqueID,
             passwordParam: hash,
@@ -125,36 +127,36 @@ app.post('/api/signup', (req, res, next) => {
 // Creates a new User
 app.post('/api/users', function(req, res) {
 
-  let { firstName, lastName, email, photoUrl, fbID } = req.body;
-  let uniqueID = fbID;
-
-  // let firstName = req.body.firstName;
-  // let lastName = req.body.lastName;
-  // let email = req.body.email || 'No email';
-  // let photoUrl = req.body.photoUrl || 'No photo';
-  // var uniqueID;
-  // if (req.body.fbID ) {
-  //   uniqueID = req.body.fbID;
-  // } else {
-  //   let split = email.split('@');
-  //   uniqueID = split[0];
-  // }
-
-  let userToken = jwt.sign({ uniqueID }, process.env.JWT_SECRET, {
-    expiresIn: "24h"
-  });
-  request({
-    uri: `http://localhost:1337/api/users/${uniqueID}`,
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${userToken}`,
-    },
-  }, (err, response, body) => {
-    if (err) {
-      console.log("POST REQUESt TO: /api/users/:uniqueID : *** ERROR ***");
-      throw err;
-    } else {
-      if (!JSON.parse(body)[0] || JSON.parse(body)[0].id !== uniqueID) {
+  if (req.body.fbID) { // facebook login
+    let { firstName, lastName, email, photoUrl, fbID } = req.body;
+    let uniqueID = fbID;
+    profileUrl = photoUrl;
+    email = email || 'Facebook User';
+            
+    let userToken = jwt.sign({ email }, process.env.JWT_SECRET, {
+      expiresIn: "24h"
+    });
+    let user = {
+      userId: uniqueID,
+      firstName,
+      lastName,
+      email,
+      profileUrl,
+      authToken: userToken,
+    };
+    session.run(
+      'MATCH (n:User)\
+      WHERE n.id = {idParam}\
+      RETURN n',
+      {idParam: uniqueID}
+    )
+    .then(result => {
+      session.close();
+      if (result.records.length) {
+        // user already exists
+        res.status(201).send({user});
+      } else {
+        // create a new user
         session
           .run('CREATE (n:User {          \
             firstName : {firstNameParam}, \
@@ -166,78 +168,73 @@ app.post('/api/users', function(req, res) {
             firstNameParam: firstName.toLowerCase(), 
             lastNameParam: lastName.toLowerCase(), 
             emailParam:email, 
-            photoParam:photoUrl, 
+            photoParam:profileUrl, 
             idParam:uniqueID
           })
           .then(result => {
-          console.log('WOOOOOOOOOOOOOOOOOO');
-            res.status(201).send({
-              userId: uniqueID,
-              firstName,
-              lastName,
-              email,
-              authToken: userToken,
-            });
+            res.status(201).send({user});
             session.close();
           })
           .catch(err => {
             session.close();
-            console.log("POST: /api/users: Creating new user : *** ERROR ***");
+            console.log("POST: /api/users: Creating new user: *** ERROR ***");
             console.log(err);
           });
-      } else {
-        res.status(400).send('User already exists');
       }
-    }
-  });
-});
+    })
+    .catch(error => {
+      console.log("POST: /api/users: Matching user: *** ERROR ***");
+    });
+    
+  } else { // vanilla login
+    let { email, password } = req.body;
+    let vanillaPassword = password;
+    session.run(
+      'MATCH (n:User)\
+      WHERE n.email = {emailParam}\
+      RETURN n',
+      {emailParam: email}
+    )
+    .then(result => {
+      session.close();
+      if (result.records.length) { 
+        let { id, firstName, lastName, email, password } = result.records[0]._fields[0].properties;
+        firstName = firstName || '';
+        lastName = lastName || '';
+        let hashedPassword = password;
+        bcrypt.compare(vanillaPassword, hashedPassword, (err, samePassword) => {
+          if (err) {
+            console.log('server.js: POST: /api/login: bcrypt.compare');
+            throw err;
+          }
+          if (samePassword) {
+            let token = jwt.sign({ email }, process.env.JWT_SECRET, {
+              expiresIn: "24h"
+            });
+            let user = {
+              userId: id,
+              firstName,
+              lastName,
+              email,
+              authToken: token,
+            };
+            res.status(201).send({ user });
+          } else {
+            res.status(400).send({ error: 'Invalid password.' });
+          }
+        });
+      } else {
+        console.log('USER NOT FOUND', result);
+        res.status(400).send({error: 'User was not found with email:  ' + email});
+      }
+    })
+    .catch(error => {
+      session.close();
+      console.log('POST /api/login: An error occurred querying user with email', email);
+      throw error;
+    });
+  }
 
-
-app.post('/api/login', (req, res, next) => {
-  let { email, password } = req.body;
-  let vanillaPassword = password;
-  session.run(
-    'MATCH (n:User)\
-    WHERE n.email = {emailParam}\
-    RETURN n',
-    {emailParam: email}
-  )
-  .then(result => {
-    session.close();
-    if (result.records.length) { 
-      let { id, firstName, lastName, email, password } = result.records[0]._fields[0].properties;
-      let hashedPassword = password;
-      bcrypt.compare(vanillaPassword, hashedPassword, (err, samePassword) => {
-        if (err) {
-          console.log('server.js: POST: /api/login: bcrypt.compare');
-          throw err;
-        }
-        if (samePassword) {
-          let token = jwt.sign({ email }, process.env.JWT_SECRET, {
-            expiresIn: "24h"
-          });
-          let user = {
-            userId: id,
-            firstName,
-            lastName,
-            email,
-            authToken: token,
-          };
-          res.status(201).send({ user });
-        } else {
-          res.status(400).send({ error: 'Invalid password.' });
-        }
-      });
-    } else {
-      console.log('USER NOT FOUND', result);
-      res.status(400).send({error: 'User was not found with email:  ' + email});
-    }
-  })
-  .catch(error => {
-    session.close();
-    console.log('POST /api/login: An error occurred querying user with email', email);
-    throw error;
-  });
 });
 
 // Responds with JSON of all users
