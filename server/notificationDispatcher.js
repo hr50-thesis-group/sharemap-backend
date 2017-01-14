@@ -26,7 +26,7 @@ module.exports = {
         sdk.sendPushNotificationAsync({
           exponentPushToken: token, // The push token for the app user you want to send the notification to
           message: userFirstName + ' just posted a pin near you!',
-          data: userFirstName + ' just posted a pin near you!'
+          data: {message: userFirstName + ' just posted a pin near you!'}
         });
       }
     })
