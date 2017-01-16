@@ -49,14 +49,14 @@ app.listen(1337, function() {
 
 app.use(jsonParser);
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(expressJWT({ secret: process.env.JWT_SECRET })  
-  .unless({
-    path: [
-      '/api/login',
-      '/api/signup',
-      '/api/users',
-    ],
-}));
+// app.use(expressJWT({ secret: process.env.JWT_SECRET })  
+//   .unless({
+//     path: [
+//       '/api/login',
+//       '/api/signup',
+//       '/api/users',
+//     ],
+// }));
 
 app.get('/', function(req, res) {
   res.send('hi');
