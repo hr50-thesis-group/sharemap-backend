@@ -522,14 +522,14 @@ app.get('/api/users/:userID/pins/public', function(req, res) {
   let userID = req.params.userID;
 
   session
-    .run(`MATCH (a) WHERE a.privacy='public'\
+    .run(`MATCH (a) WHERE a.privacy=public})\
       RETURN a\
       UNION MATCH (m)<-[:FRIENDED]-(n) WHERE n.id='${userID}'\
       MATCH (a)<-[:PINNED]-(m)\
-      RETURN a, m`)    
+      RETURN a`)    
     .then(result => {
-      res.status(200).send({result});
-      console.log('SERVER RESPONSE', result);
+      res.status(200).send(result.records);
+      console.log('SERVER RESPONSE', result.records);
       session.close();
     })
     .catch(err => {
@@ -548,7 +548,7 @@ app.get('/api/users/:userID/pins', function(req, res) {
           MATCH (pin)<-[:PINNED]-(n)  \
           RETURN pin', {userIDParam: userID})
     .then(result => {
-      res.status(200).send(result);
+      res.status(200).send(result.records);
       session.close;
     })
     .catch(err => {
