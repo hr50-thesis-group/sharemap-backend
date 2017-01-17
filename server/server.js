@@ -506,8 +506,8 @@ app.get('/api/users/:userID/pins/private', function(req, res) {
           MATCH (a)<-[:PINNED]-(m)\
           RETURN a, m`)
     .then(result => {
-      res.status(200).send({result});
-      console.log('SERVER RESPONSE', result);
+      res.status(200).send(result.records);
+      console.log('SERVER RESPONSE', result.records);
       session.close();
     })
     .catch(err => {
