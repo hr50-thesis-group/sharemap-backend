@@ -548,11 +548,10 @@ app.get('/api/users/:userID/pins', function(req, res) {
           MATCH (pin)<-[:PINNED]-(n)  \
           RETURN pin', {userIDParam: userID})
     .then(result => {
-      res.status(200).send(result.records);
+      res.status(200).send(result);
       session.close;
     })
     .catch(err => {
-
       console.log(err);
     });
 });
