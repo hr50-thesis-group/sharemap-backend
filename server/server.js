@@ -522,11 +522,11 @@ app.get('/api/users/:userID/pins/public', function(req, res) {
   let userID = req.params.userID;
 
   session
-    .run(`MATCH (a) WHERE a.privacy='public'\
-      RETURN a\
+    .run(`MATCH (m)-[:PINNED]->(a) WHERE a.privacy='public'\
+      RETURN a, m\
       UNION MATCH (m)<-[:FRIENDED]-(n) WHERE n.id='${userID}'\
-      MATCH (a)<-[:PINNED]-(m)\
-      RETURN a`)    
+      MATCH (m)-[:PINNED]->(a)\
+      RETURN a, m`)    
     .then(result => {
       res.status(200).send(result.records);
       console.log('SERVER RESPONSE', result.records);
