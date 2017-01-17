@@ -586,22 +586,45 @@ app.post('/api/users/:userID/pins/:pinID/likes', function(req, res) {
     .run(`MATCH (n:User {id:'${userID}'})-[r:LIKES]->(a:Pin {id:'${pinID}'})
       RETURN COUNT(r)`)
     .then(result => {
-      console.log(result.records[0]._fields[0].toNumber())
-      // if (result.records[0]._fields[0].low) {
-      //   session.run(`MATCH (n:User {id:'${userID}'}), (a:Pin {id:'${pinID}'})
-      //     CREATE (n)-[:LIKES]->(a)
-      //     MATCH (n:User)-[r:LIKES]->(a:Pin {id:'${pinID}'})
-      //     RETURN count(r)`)
-      // }
-      res.send(result.records[0]._fields[0].toNumber());
-    })
-    // .then(result => {
-    //   res.status(200).send(result.records.map(record => {
-    //     return record._fields[0].properties;
-    //   }));
-    //   session.close();
-    // })
-    .catch(err => {
+      var parsedInt = result.records[0]._fields[0].toNumber();
+      if (parsedInt) {
+        // IF USER HAS ALREADY LIKED THE POST, UNLIKE THE POST
+        session.run(`MATCH (n:User {id:'${userID}'})-[r:LIKES]->(a:Pin {id:'${pinID}'})
+        DELETE r`)
+        .then(result => {
+          session.run(`MATCH (u:User)-[o:LIKES]->(p:Pin {id:'${pinID}'})
+          RETURN COUNT(o)`).then(result => {
+            var parsedInt = result.records[0]._fields[0].toNumber();
+            res.status(201).send(JSON.stringify({numOfLikes: parsedInt}));
+            session.close();
+          }).catch(err => {
+            session.close();
+            console.log(err);
+          });
+        }).catch(err => {
+          session.close();
+          console.log(err);
+        });
+      } else {
+        // OTHERWISE, LIKE THE POST
+        session.run(`MATCH (n:User {id:'${userID}'}), (a:Pin {id:'${pinID}'})
+        CREATE (n)-[:LIKES]->(a)`)
+        .then(result => {
+          session.run(`MATCH (n:User)-[r:LIKES]->(a:Pin {id:'${pinID}'})
+          RETURN count(r)`).then(result => {
+            var parsedInt = result.records[0]._fields[0].toNumber();
+            res.status(201).send(JSON.stringify({numOfLikes: parsedInt}));
+            session.close();
+          }).catch(err => {
+            session.close();
+            console.log(err);
+          }); 
+        }).catch(err => {
+          session.close();
+          console.log(err);
+        });        
+      }
+    }).catch(err => {
       session.close();
       console.log(err);
     });
