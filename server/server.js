@@ -586,7 +586,8 @@ app.post('/api/users/:userID/pins/:pinID/likes', function(req, res) {
     .run(`MATCH (n:User {id:'${userID}'})-[r:LIKES]->(a:Pin {id:'${pinID}'})
       RETURN COUNT(r)`)
     .then(result => {
-      console.log(result);
+      console.log(result.records[0]._fields);
+      res.send(result.records[0]._fields);
     })
     // .then(result => {
     //   res.status(200).send(result.records.map(record => {
