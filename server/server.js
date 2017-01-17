@@ -586,8 +586,14 @@ app.post('/api/users/:userID/pins/:pinID/likes', function(req, res) {
     .run(`MATCH (n:User {id:'${userID}'})-[r:LIKES]->(a:Pin {id:'${pinID}'})
       RETURN COUNT(r)`)
     .then(result => {
-      console.log(result.records[0]._fields);
-      res.send(result.records[0]._fields);
+      console.log(result.records[0]._fields[0].toNumber())
+      // if (result.records[0]._fields[0].low) {
+      //   session.run(`MATCH (n:User {id:'${userID}'}), (a:Pin {id:'${pinID}'})
+      //     CREATE (n)-[:LIKES]->(a)
+      //     MATCH (n:User)-[r:LIKES]->(a:Pin {id:'${pinID}'})
+      //     RETURN count(r)`)
+      // }
+      res.send(result.records[0]._fields[0].toNumber());
     })
     // .then(result => {
     //   res.status(200).send(result.records.map(record => {
