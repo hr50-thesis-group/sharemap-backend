@@ -522,7 +522,7 @@ app.get('/api/users/:userID/pins/public', function(req, res) {
   let userID = req.params.userID;
 
   session
-    .run(`MATCH (a) WHERE a.privacy='public'})\
+    .run(`MATCH (a) WHERE a.privacy='public'\
       RETURN a\
       UNION MATCH (m)<-[:FRIENDED]-(n) WHERE n.id='${userID}'\
       MATCH (a)<-[:PINNED]-(m)\
