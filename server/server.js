@@ -504,7 +504,7 @@ app.get('/api/users/:userID/pins/private', function(req, res) {
   session
     .run('MATCH (m)<-[:FRIENDED]-(n) WHERE n.id:{userIDParam}\
           MATCH (a)<-[:PINNED]-(m)\
-          RETURN a',
+          RETURN a, m',
     { userIDParam: userID })
     .then(result => {
       res.status(200).send({result});
@@ -527,13 +527,14 @@ app.get('/api/users/:userID/pins/public', function(req, res) {
       RETURN a\
       UNION MATCH (m)<-[:FRIENDED]-(n) WHERE n.id:{userIDParam}\
       MATCH (a)<-[:PINNED]-(m)\
-      RETURN a',
+      RETURN a, m',
     { 
       userIDParam: userID,
       publicParam: 'public'
     })    
     .then(result => {
       res.status(200).send({result});
+      console.log('SERVER RESPONSE', result);
       session.close();
     })
     .catch(err => {
