@@ -583,21 +583,19 @@ app.post('/api/users/:userID/pins/:pinID/likes', function(req, res) {
   var pinID = req.params.pinID;
   var userID = req.params.userID;
   session
-    .run('MATCH (n:User {id: userIDParam}), (a:Pin {id: pinIDParam})\
-          CREATE (n)-[:LIKES]->(a)\
-          MATCH (n:User)-[r:LIKES]->(a:Pin {id: pinIDParam})\
-          RETURN count(r)', {
-            pinIDParam: pinID,
-            userIDParam: userID,
-          })
+    .run(`MATCH (n:User {id:'${userID}'})-[r:LIKES]->(a:Pin {id:'${pinID}'}
+      RETURN COUNT(r))`)
     .then(result => {
-      res.status(200).send(result.records.map(record => {
-        return record._fields[0].properties;
-      }));
-      session.close();
-
+      console.log(result);
     })
+    // .then(result => {
+    //   res.status(200).send(result.records.map(record => {
+    //     return record._fields[0].properties;
+    //   }));
+    //   session.close();
+    // })
     .catch(err => {
+      session.close();
       console.log(err);
     });
 }); 
@@ -674,23 +672,6 @@ app.delete('/api/users/:userID/pins/:pinID', function(req, res) {
     });
 });
 
-// // Increments a Pin's LIKES
-// app.put('/api/users/:userID/pins/:pinID', function(req, res) {
-//   let pinID = req.params.pinID;
-
-//   session
-//     .run('MATCH (a {id: {pinID} })\
-//       RETURN a.likes',                        
-//     )
-//     .then(result => {
-//       // NEEDS TO TAKE LIKES RESULT, INCREMENT, THEN SET LIKES TO NEW LIKE
-//       res.status(200).send(result);
-//       session.close();
-//     })
-//     .catch(err => {
-//       console.log(err);
-//     });
-// });
 
 app.post('/upload', upload.single('file'), (req, res, next) => {
   res.json(req.file);

@@ -1,8 +1,8 @@
 // user POST
 {
-  "firstName": "Tim",
-  "lastName": "Chin",
-  "email": "timm.chin@gmail.com"
+  "firstName": "Demo",
+  "lastName": "Account",
+  "email": "demo@example.com"
 } 
 
 {
@@ -32,6 +32,22 @@
   "mediaUrl": "https://s-media-cache-ak0.pinimg.com/originals/35/06/d9/3506d97e8e5d22727ea46bc50c5cd300.jpg",
   "description": "<3_<3"
 }
+
+{
+  location: {
+    latitude: 25,
+    longitude: -118 
+  },
+  mediaUrl: {mediaUrlParam},
+  description: {descriptionParam},
+  createdAt: {createdAtParam},
+  userID: {userIDParam},
+  category: {categoryParam},
+  privacy: {privacyParam},
+  likes: {likesParam}
+}
+
+        
 
 
 {
