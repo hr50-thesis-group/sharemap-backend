@@ -591,6 +591,24 @@ app.get('/api/users/:userID/pins/:pinID', function(req, res) {
 });
 
 // Likes
+
+// Get the ID of every user who likes a particular pin
+app.get('/api/users/:userID/pins/:pinID/likes', function(req, res) {
+  var pinID = req.params.pinID;
+  session
+    .run(`MATCH (n:User)-[r:LIKES]->(a:Pin {id:'${pinID}'})\
+          RETURN n.id`)
+    .then(result => {
+      res.status(200).send(result.records.map(record => {
+        return record._fields[0].properties;
+      }));
+      session.close();
+    })
+    .catch(err => {
+      console.log(err);
+    });
+});
+
 app.post('/api/users/:userID/pins/:pinID/likes', function(req, res) {
   var pinID = req.params.pinID;
   var userID = req.body.id;
