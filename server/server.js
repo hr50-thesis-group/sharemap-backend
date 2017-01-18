@@ -600,7 +600,7 @@ app.get('/api/users/:userID/pins/:pinID/likes', function(req, res) {
           RETURN n.id`)
     .then(result => {
       res.status(200).send(result.records.map(record => {
-        return record._fields[0].properties;
+        return record._fields[0]
       }));
       session.close();
     })
