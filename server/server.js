@@ -510,7 +510,7 @@ app.get('/api/users/:userID/pins/private', function(req, res) {
         let obj = record._fields[0].properties;
         let parsedInt = record._fields[2].toNumber();
         obj.likes = parsedInt || 0;
-        return obj;
+        return record;
       }));
       console.log('SERVER RESPONSE', result.records);
       session.close();
@@ -537,7 +537,7 @@ app.get('/api/users/:userID/pins/public', function(req, res) {
         let obj = record._fields[0].properties;
         let parsedInt = record._fields[2].toNumber();
         obj.likes = parsedInt || 0;
-        return obj;
+        return record;
       }));
       console.log('SERVER RESPONSE', result.records);
       session.close();
