@@ -594,6 +594,8 @@ app.get('/api/users/:userID/pins/:pinID', function(req, res) {
 app.post('/api/users/:userID/pins/:pinID/likes', function(req, res) {
   var pinID = req.params.pinID;
   var userID = req.body.id;
+  console.log('user id:', userID)
+  console.log('pin id:', pinID)
   session
     .run(`MATCH (n:User {id:'${userID}'})-[r:LIKES]->(a:Pin {id:'${pinID}'})
       RETURN COUNT(r)`)
@@ -623,6 +625,7 @@ app.post('/api/users/:userID/pins/:pinID/likes', function(req, res) {
         session.run(`MATCH (n:User {id:'${userID}'}), (a:Pin {id:'${pinID}'})
         CREATE (n)-[:LIKES]->(a)`)
         .then(result => {
+          console.log('result of liking', result)
           session.run(`MATCH (n:User)-[r:LIKES]->(a:Pin {id:'${pinID}'})
           RETURN count(r)`).then(result => {
             var parsedInt = result.records[0]._fields[0].toNumber();
