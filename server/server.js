@@ -581,7 +581,7 @@ app.get('/api/users/:userID/pins/:pinID', function(req, res) {
 // Likes
 app.post('/api/users/:userID/pins/:pinID/likes', function(req, res) {
   var pinID = req.params.pinID;
-  var userID = req.params.userID;
+  var userID = req.body.id;
   session
     .run(`MATCH (n:User {id:'${userID}'})-[r:LIKES]->(a:Pin {id:'${pinID}'})
       RETURN COUNT(r)`)
