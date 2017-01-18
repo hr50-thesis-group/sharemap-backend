@@ -510,8 +510,9 @@ app.get('/api/users/:userID/pins/private', function(req, res) {
         let obj = record._fields[0].properties;
         let parsedInt = record._fields[2].toNumber();
         obj.likes = parsedInt || 0;
-        return record;
+        return obj;
       }));
+      console.log('SERVER RESPONSE', result.records);
       session.close();
     })
     .catch(err => {
@@ -536,8 +537,9 @@ app.get('/api/users/:userID/pins/public', function(req, res) {
         let obj = record._fields[0].properties;
         let parsedInt = record._fields[2].toNumber();
         obj.likes = parsedInt || 0;
-        return record;
+        return obj;
       }));
+      console.log('SERVER RESPONSE', result.records);
       session.close();
     })
     .catch(err => {
@@ -597,7 +599,8 @@ app.post('/api/users/:userID/pins/:pinID/likes', function(req, res) {
       RETURN COUNT(r)`)
     .then(result => {
       var parsedInt = result.records[0]._fields[0].toNumber();
-      if (parsedInt) {
+      console.log('parsed Int:', parsedInt)
+      if (parsedInt > 0) {
         // IF USER HAS ALREADY LIKED THE POST, UNLIKE THE POST
         session.run(`MATCH (n:User {id:'${userID}'})-[r:LIKES]->(a:Pin {id:'${pinID}'})
         DELETE r`)
@@ -681,6 +684,11 @@ app.post('/api/users/:userID/pins', function(req, res) {
         res.status(201).send(data);
         dispatcher.sendPushNotification(data);
         session.close();
+      })
+      .catch(err => {
+        session.close();
+        console.log('*** ERROR ***');
+        console.log(err);
       })
     })
     .catch(err => {
