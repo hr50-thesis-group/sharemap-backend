@@ -506,8 +506,12 @@ app.get('/api/users/:userID/pins/private', function(req, res) {
           MATCH (a)<-[:PINNED]-(m)\
           RETURN a, m, SIZE( ()-[:LIKES]->(a) ) as likes`)
     .then(result => {
-      res.status(200).send(result.records);
-      console.log('SERVER RESPONSE', result.records);
+      res.status(200).send(result.records.map(record => {
+        let obj = record._fields[0].properties;
+        let parsedInt = record._fields[2].toNumber();
+        obj.likes = parsedInt || 0;
+        return record;
+      }));
       session.close();
     })
     .catch(err => {
@@ -528,8 +532,12 @@ app.get('/api/users/:userID/pins/public', function(req, res) {
       MATCH (m)-[:PINNED]->(a)
       RETURN a, m, SIZE( ()-[:LIKES]->(a) ) as likes`)    
     .then(result => {
-      res.status(200).send(result.records);
-      console.log('SERVER RESPONSE', result.records);
+      res.status(200).send(result.records.map(record => {
+        let obj = record._fields[0].properties;
+        let parsedInt = record._fields[2].toNumber();
+        obj.likes = parsedInt || 0;
+        return record;
+      }));
       session.close();
     })
     .catch(err => {
