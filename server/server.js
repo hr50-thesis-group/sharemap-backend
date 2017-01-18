@@ -544,9 +544,9 @@ app.get('/api/users/:userID/pins', function(req, res) {
   var userID = req.params.userID;
 
   session
-    .run('MATCH (n:User {id:{userIDParam}})\
-          MATCH (pin)<-[:PINNED]-(n)  \
-          RETURN pin', {userIDParam: userID})
+    .run(`MATCH (n:User {id:'${userID}'})
+          MATCH (pin)<-[:PINNED]-(n)  
+          RETURN pin`)
     .then(result => {
       res.status(200).send(result);
       session.close;
@@ -566,11 +566,10 @@ app.get('/api/users/:userID/pins/:pinID', function(req, res) {
           MATCH (n:User)-[r:LIKES]->(a)
           RETURN a, COUNT(r)`)
     .then(result => {
-      console.log('test');
       res.status(200).send(result.records.map(record => {
         let obj = record._fields[0].properties;
         let parsedInt = record._fields[1].toNumber();
-        obj.likes = parsedInt;
+        obj.likes = parsedInt || 0;
         return obj;
       }));
       session.close();
@@ -653,7 +652,7 @@ app.post('/api/users/:userID/pins', function(req, res) {
         createdAt: {createdAtParam},\
         userID: {userIDParam},\
         category: {categoryParam},\
-        privacy: {privacyParam},\
+        privacy: {privacyParam}\
       }) MERGE (a)<-[:PINNED]-(n)\
          RETURN a.description', 
     { //:User {id: {userIDParam}}
@@ -664,8 +663,7 @@ app.post('/api/users/:userID/pins', function(req, res) {
       createdAtParam: createdAt,
       userIDParam: userID,
       categoryParam: category,
-      privacyParam: privacy,
-
+      privacyParam: privacy
     })
     .then(result => {
       session
