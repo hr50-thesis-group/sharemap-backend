@@ -555,10 +555,15 @@ app.get('/api/users/:userID/pins', function(req, res) {
 
   session
     .run(`MATCH (n:User {id:'${userID}'})
-          MATCH (pin)<-[:PINNED]-(n)  
-          RETURN pin`)
+          MATCH (pin)<-[r:PINNED]-(n)  
+          RETURN pin, SIZE( ()-[:LIKES]->(pin) ) as likes`)
     .then(result => {
-      res.status(200).send(result.records);
+      res.status(200).send(result.records.map(record) => {
+        let obj = record._fields[0].properties;
+        let parsedInt = record._fields[1].toNumber();
+        obj.likes = parsedInt || 0;
+        return record;
+      });
       session.close;
     })
     .catch(err => {
