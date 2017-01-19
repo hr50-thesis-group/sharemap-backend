@@ -12,12 +12,12 @@ module.exports = {
     userFirstName = userFirstName.slice(0, 1).toUpperCase() + userFirstName.slice(1);
 
     data.records.forEach(record => {
-      console.log('notification dispatcher data record:', record)
       var token = record._fields[0];
+      console.log('dispatcher record: ', record);
       if(sdk.isExponentPushToken(token)) {
         sdk.sendPushNotificationAsync({
           exponentPushToken: token, // The push token for the app user you want to send the notification to
-          message: 'token: ' + token
+          message: token
         });
       }
     })
