@@ -558,7 +558,7 @@ app.get('/api/users/:userID/pins', function(req, res) {
           MATCH (pin)<-[:PINNED]-(n)  
           RETURN pin`)
     .then(result => {
-      res.status(200).send(result);
+      res.status(200).send(result.records);
       session.close;
     })
     .catch(err => {
