@@ -13,11 +13,10 @@ module.exports = {
 
     data.records.forEach(record => {
       var token = record._fields[0];
-      console.log('dispatcher record: ', record);
       if(sdk.isExponentPushToken(token)) {
         sdk.sendPushNotificationAsync({
           exponentPushToken: token, // The push token for the app user you want to send the notification to
-          message: token
+          message: userFirstName + ' just posted a pin near you!'
         });
       }
     })
